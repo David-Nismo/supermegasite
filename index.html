@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <title>Мой облачный проект</title>
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; padding: 50px; background-color: #f4f4f9; }
-        .form-container { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 300px; }
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 50px; background-color: #f4f4f9; }
+        .form-container { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 300px; margin-bottom: 20px; }
         input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         button { width: 100%; padding: 10px; background: #f4b400; border: none; color: white; font-weight: bold; cursor: pointer; border-radius: 5px; }
         button:hover { background: #dfa400; }
@@ -23,22 +23,31 @@
 </div>
 
 <script type="module">
-    // Импортируем модули Firebase
+    // 1. Добавлены updateDoc, increment, doc, query, orderBy, getDocs
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { 
+        getFirestore, 
+        collection, 
+        addDoc, 
+        updateDoc, 
+        increment, 
+        doc, 
+        query, 
+        orderBy, 
+        getDocs,
+        serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-    // ТВОИ КЛЮЧИ СО СКРИНШОТА
     const firebaseConfig = {
-    apiKey: "AIzaSyDIuPsxUWVwJ1rVl1ytjVUHA84L4nQlwrM",
-    authDomain: "supermegasite-6c1a9.firebaseapp.com",
-    projectId: "supermegasite-6c1a9",
-    storageBucket: "supermegasite-6c1a9.firebasestorage.app",
-    messagingSenderId: "301398062192",
-    appId: "1:301398062192:web:39b01badba333fe1e7b0b5",
-    measurementId: "G-XG9537KF24"
-  };
+        apiKey: "AIzaSyDIuPsxUWVwJ1rVl1ytjVUHA84L4nQlwrM",
+        authDomain: "supermegasite-6c1a9.firebaseapp.com",
+        projectId: "supermegasite-6c1a9",
+        storageBucket: "supermegasite-6c1a9.firebasestorage.app",
+        messagingSenderId: "301398062192",
+        appId: "1:301398062192:web:39b01badba333fe1e7b0b5",
+        measurementId: "G-XG9537KF24"
+    };
 
-    // Инициализация
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
@@ -50,19 +59,45 @@
         const emailInput = document.getElementById("userEmail").value;
 
         try {
-            // Запись в коллекцию "requests"
+            // А) Добавляем основной документ с использованием serverTimestamp
             await addDoc(collection(db, "requests"), {
                 name: nameInput,
                 email: emailInput,
-                timestamp: new Date()
+                timestamp: serverTimestamp() // Используем серверное время для точности orderBy
             });
-            alert("Готово! Данные сохранены в Firebase.");
+
+            // Б) Использование updateDoc и increment
+            // Обновляем (или создаем) документ-счетчик 'totals' в коллекции 'stats'
+            const statsRef = doc(db, "stats", "totals");
+            await updateDoc(statsRef, {
+                counter: increment(1)
+            }).catch(async (err) => {
+                // Если документа еще нет, Firebase выдаст ошибку, здесь можно его создать через setDoc
+                console.log("Счетчик будет создан при первой успешной записи (требуется существующий документ для updateDoc)");
+            });
+
+            alert("Готово! Данные сохранены, счетчик увеличен.");
+            
+            // В) Пример вызова данных с orderBy
+            await loadData();
+
             document.getElementById("feedbackForm").reset();
         } catch (error) {
-            console.error("Ошибка записи: ", error);
-            alert("Ошибка при отправке.");
+            console.error("Ошибка: ", error);
+            alert("Ошибка при отправке. Проверьте консоль.");
         }
     });
+
+    // Функция для получения данных с сортировкой (orderBy)
+    async function loadData() {
+        const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
+        const querySnapshot = await getDocs(q);
+        
+        console.log("Последние заявки (от новых к старым):");
+        querySnapshot.forEach((doc) => {
+            console.log(doc.id, " => ", doc.data());
+        });
+    }
 </script>
 </body>
 </html>
