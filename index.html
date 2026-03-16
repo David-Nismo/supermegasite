@@ -59,16 +59,11 @@
         // МЕТОД: ЗАПИСЬ С ВАЛИДАЦИЕЙ
         document.getElementById('mainBtn').onclick = async () => {
             const btn = document.getElementById('mainBtn');
-            const nameVal = document.getElementById('name').value;
-            const emailVal = document.getElementById('email').value;
-
-            if(!nameVal || !emailVal) return alert("Заполните все поля");
-
             btn.disabled = true;
             try {
                 await addDoc(collection(db, "requests"), {
-                    name: nameVal,
-                    email: emailVal,
+                    name: document.getElementById('name').value,
+                    email: document.getElementById('email').value,
                     likes: 0,
                     timestamp: serverTimestamp()
                 });
@@ -81,23 +76,17 @@
 
         // МЕТОД: REAL-TIME СИНХРОНИЗАЦИЯ
         const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
-        
         onSnapshot(q, (snapshot) => {
             const feed = document.getElementById('feed');
             feed.innerHTML = "";
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                const id = doc.id;
-                
-                // Проверка на наличие timestamp (бывает null при первой записи serverTimestamp)
-                const timeString = data.timestamp ? data.timestamp.toDate().toLocaleTimeString() : "...";
-
                 feed.innerHTML += `
                     <div class="post">
-                        <span class="time">${timeString}</span>
+                        <span class="time">${data.timestamp?.toDate().toLocaleTimeString() || "..."}</span>
                         <b>${data.name}</b>
                         <p style="margin: 5px 0;">${data.email}</p>
-                        <button class="like-btn" onclick="processLike('${id}')">👍 ${data.likes || 0}</button>
+                        <button class="like-btn" onclick="processLike('${doc.id}')">👍 ${data.likes || 0}</button>
                     </div>
                 `;
             });
