@@ -2,28 +2,58 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>SuperMegaSite</title>
+    <title>Cloud Pulse Board</title>
     <style>
-        body { font-family: 'Inter', sans-serif; background: #f4f7f6; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { width: 100%; max-width: 500px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        button#mainBtn { background: #007bff; color: white; border: none; padding: 12px; border-radius: 12px; width: 100%; font-weight: 600; cursor: pointer; transition: 0.3s; }
-        .post { background: #fff; border: 1px solid #eaeaea; padding: 15px; margin-top: 15px; border-radius: 8px; width: 100%; max-width: 500px; position: relative; }
-        .like-btn { cursor: pointer; border: none; background: #f8f9fa; padding: 5px 12px; border-radius: 20px; font-size: 14px; transition: 0.2s; }
-        .like-btn:hover { background: #e2e6ea; }
-        .time { font-size: 11px; color: #999; float: right; }
+        :root { --bg: #0a0a0c; --card: #16161a; --primary: #3d5afe; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #e2e8f0; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { width: 100%; max-width: 480px; background: var(--card); padding: 30px; border-radius: 24px; border: 1px solid #2d2d33; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        input { width: 100%; padding: 14px; margin: 10px 0; background: #1f1f23; border: 1px solid #333; color: white; border-radius: 12px; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(61, 90, 254, 0.2); }
+        
+        #mainBtn { 
+            background: var(--primary); color: white; border: none; padding: 16px; 
+            border-radius: 12px; width: 100%; font-weight: 700; cursor: pointer; 
+            margin-top: 15px; letter-spacing: 1px; transition: 0.4s;
+        }
+        #mainBtn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(61, 90, 254, 0.4); }
+
+        /* ФУНКЦИЯ 1: Динамические стили "Тепловой карты" */
+        .post { 
+            margin-top: 20px; padding: 20px; border-radius: 20px; 
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative; border: 1px solid #2d2d33;
+        }
+        
+        /* Состояния в зависимости от лайков */
+        .level-low { background: #16161a; }
+        .level-mid { background: #1e1b4b; border-color: #4338ca; box-shadow: 0 0 20px rgba(67, 56, 202, 0.2); }
+        .level-high { 
+            background: linear-gradient(135deg, #312e81 0%, #4c1d95 100%); 
+            border-color: #a78bfa; 
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow { from { box-shadow: 0 0 10px rgba(167, 139, 250, 0.2); } to { box-shadow: 0 0 30px rgba(167, 139, 250, 0.5); } }
+
+        .like-btn { 
+            background: rgba(255,255,255,0.1); border: none; color: white; 
+            padding: 10px 20px; border-radius: 30px; cursor: pointer; 
+            font-weight: 600; margin-top: 10px; transition: 0.2s;
+        }
+        .like-btn:active { transform: scale(0.9); }
+        .time { font-size: 11px; opacity: 0.5; float: right; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h3>Панель управления данными</h3>
-        <input type="text" id="name" placeholder="Имя профиля">
-        <input type="email" id="email" placeholder="Рабочий Email">
-        <button id="mainBtn">Опубликовать в облако</button>
+        <h2 style="text-align: center; margin-bottom: 25px;">⚡️ Cloud Pulse</h2>
+        <input type="text" id="name" placeholder="Твой псевдоним">
+        <input type="email" id="email" placeholder="Email для связи">
+        <button id="mainBtn">ЗАПУСТИТЬ В ОБЛАКО</button>
     </div>
 
-    <div id="feed" style="width: 100%; max-width: 500px;"></div>
+    <div id="feed" style="width: 100%; max-width: 480px;"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -32,61 +62,70 @@
             serverTimestamp, updateDoc, doc, increment 
         } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-        // КОНФИГУРАЦИЯ
         const firebaseConfig = {
-  apiKey: "AIzaSyDIuPsxUWVwJ1rVl1ytjVUHA84L4nQlwrM",
-  authDomain: "supermegasite-6c1a9.firebaseapp.com",
-  projectId: "supermegasite-6c1a9",
-  storageBucket: "supermegasite-6c1a9.firebasestorage.app",
-  messagingSenderId: "301398062192",
-  appId: "1:301398062192:web:39b01badba333fe1e7b0b5",
-  measurementId: "G-XG9537KF24"
-};
+            apiKey: "AIzaSyDIuPsxUWVwJ1rVl1ytjVUHA84L4nQlwrM",
+            authDomain: "supermegasite-6c1a9.firebaseapp.com",
+            projectId: "supermegasite-6c1a9",
+            storageBucket: "supermegasite-6c1a9.firebasestorage.app",
+            messagingSenderId: "301398062192",
+            appId: "1:301398062192:web:39b01badba333fe1e7b0b5"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // МЕТОД: АТОМАРНОЕ ОБНОВЛЕНИЕ (LIKES)
-        window.processLike = async (id) => {
+        // ФУНКЦИЯ 2: Аудио-синтезатор (Звуковой отклик)
+        const playPulseSound = (freq) => {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.5);
+        };
+
+        window.processLike = async (id, currentLikes) => {
+            playPulseSound(200 + (currentLikes * 10)); // Звук становится выше с ростом лайков
             const docRef = doc(db, "requests", id);
-            try {
-                await updateDoc(docRef, { likes: increment(1) });
-            } catch (e) {
-                console.error("Validation Error:", e.message);
-            }
+            await updateDoc(docRef, { likes: increment(1) });
         };
 
-        // МЕТОД: ЗАПИСЬ С ВАЛИДАЦИЕЙ
         document.getElementById('mainBtn').onclick = async () => {
-            const btn = document.getElementById('mainBtn');
-            btn.disabled = true;
-            try {
-                await addDoc(collection(db, "requests"), {
-                    name: document.getElementById('name').value,
-                    email: document.getElementById('email').value,
-                    likes: 0,
-                    timestamp: serverTimestamp()
-                });
-                document.getElementById('email').value = "";
-            } catch (e) {
-                alert("Ошибка безопасности: Данные отклонены сервером.");
-            }
-            btn.disabled = false;
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            if(!name || !email) return alert("Заполни поля!");
+
+            await addDoc(collection(db, "requests"), {
+                name, email, likes: 0, timestamp: serverTimestamp()
+            });
+            document.getElementById('email').value = "";
         };
 
-        // МЕТОД: REAL-TIME СИНХРОНИЗАЦИЯ
         const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
         onSnapshot(q, (snapshot) => {
             const feed = document.getElementById('feed');
             feed.innerHTML = "";
             snapshot.forEach((doc) => {
                 const data = doc.data();
+                const l = data.likes || 0;
+                
+                // Определение "температуры" поста
+                let heatClass = 'level-low';
+                if(l > 5) heatClass = 'level-mid';
+                if(l > 15) heatClass = 'level-high';
+
                 feed.innerHTML += `
-                    <div class="post">
-                        <span class="time">${data.timestamp?.toDate().toLocaleTimeString() || "..."}</span>
-                        <b>${data.name}</b>
-                        <p style="margin: 5px 0;">${data.email}</p>
-                        <button class="like-btn" onclick="processLike('${doc.id}')">👍 ${data.likes || 0}</button>
+                    <div class="post ${heatClass}">
+                        <span class="time">${data.timestamp?.toDate().toLocaleTimeString() || "..." }</span>
+                        <b style="color: #60a5fa">${data.name}</b>
+                        <p style="margin: 8px 0; font-size: 14px; opacity: 0.8;">${data.email}</p>
+                        <button class="like-btn" onclick="processLike('${doc.id}', ${l})">
+                            ❤ ${l}
+                        </button>
                     </div>
                 `;
             });
