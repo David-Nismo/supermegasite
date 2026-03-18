@@ -2,41 +2,47 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Super Mega Site</title>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <title>Cloud Master 3.0</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { width: 100%; max-width: 450px; background: #1e293b; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #334155; }
+        :root { --bg: #f8fafc; --primary: #6366f1; --text: #1e293b; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; }
         
-        /* Индикатор онлайна */
-        .status { font-size: 12px; color: #10b981; display: flex; align-items: center; margin-bottom: 10px; }
-        .pulse { width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 8px; animation: pulse-animation 2s infinite; }
-        @keyframes pulse-animation { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
-
-        input { width: 100%; padding: 12px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 10px; box-sizing: border-box; }
-        button#mainBtn { background: #3b82f6; color: white; border: none; padding: 14px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        button#mainBtn:hover { background: #2563eb; transform: scale(1.02); }
-
-        .post { background: #1e293b; border: 1px solid #334155; padding: 20px; margin-top: 15px; border-radius: 15px; width: 100%; max-width: 450px; position: relative; transition: 0.3s; }
-        .post:hover { border-color: #3b82f6; }
+        .container { width: 100%; max-width: 500px; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; transition: 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; ring: 2px var(--primary); }
         
-        .like-btn { cursor: pointer; border: none; background: #334155; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; transition: 0.2s; margin-top: 10px; }
-        .like-btn:hover { background: #475569; }
-        .time { font-size: 11px; color: #64748b; float: right; }
-        b { color: #3b82f6; }
+        #mainBtn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 10px; width: 100%; font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        #mainBtn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* ФУНКЦИЯ 1: Стили для поиска */
+        .search-box { width: 100%; max-width: 500px; margin: 20px 0; position: relative; }
+        .search-box input { background: #fff; border-radius: 15px; padding-left: 40px; border: 2px solid #e2e8f0; }
+
+        .post { background: white; border-radius: 15px; padding: 15px; margin-top: 15 padding: 20px; margin-bottom: 15px; display: flex; align-items: flex-start; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #f1f5f9; }
+        
+        /* ФУНКЦИЯ 2: Стили аватарок */
+        .avatar { width: 50px; height: 50px; border-radius: 12px; background: #f1f5f9; flex-shrink: 0; }
+        
+        .post-content { flex-grow: 1; }
+        .like-btn { cursor: pointer; border: none; background: #f1f5f9; padding: 6px 14px; border-radius: 20px; font-size: 13px; color: var(--primary); font-weight: bold; }
+        .time { font-size: 11px; color: #94a3b8; float: right; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <div class="status"><div class="pulse"></div> Облако активно (Live)</div>
-        <h3>Новая запись</h3>
-        <input type="text" id="name" placeholder="Твой ник">
+        <h3 style="margin-top:0">🚀 Создать пост</h3>
+        <input type="text" id="name" placeholder="Твое имя">
         <input type="email" id="email" placeholder="Твой Email">
-        <button id="mainBtn">ОТПРАВИТЬ</button>
+        <button id="mainBtn">Опубликовать</button>
     </div>
 
-    <div id="feed" style="width: 100%; max-width: 450px;"></div>
+    <div class="search-box">
+        <span style="position:absolute; left:15px; top:20px;">🔍</span>
+        <input type="text" id="searchInput" placeholder="Поиск по имени или почте...">
+    </div>
+
+    <div id="feed" style="width: 100%; max-width: 500px;"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -57,23 +63,16 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // ФУНКЦИЯ 1: Обработка лайка + Конфетти
-        window.processLike = async (id, currentLikes) => {
-            const docRef = doc(db, "requests", id);
-            try {
-                // Если после этого клика будет 5, 10, 15... лайков — бабах!
-                if ((currentLikes + 1) % 5 === 0) {
-                    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-                }
-                await updateDoc(docRef, { likes: increment(1) });
-            } catch (e) { console.error(e); }
+        let allPosts = []; // Хранилище для локальной фильтрации
+
+        window.processLike = async (id) => {
+            await updateDoc(doc(db, "requests", id), { likes: increment(1) });
         };
 
-        // Запись данных
         document.getElementById('mainBtn').onclick = async () => {
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
-            if(!name || !email) return;
+            if(!name || !email) return alert("Заполни поля!");
 
             await addDoc(collection(db, "requests"), {
                 name, email, likes: 0, timestamp: serverTimestamp()
@@ -81,23 +80,46 @@
             document.getElementById('email').value = "";
         };
 
-        // ФУНКЦИЯ 2: Real-time поток (с эффектом появления)
-        const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
-        onSnapshot(q, (snapshot) => {
+        // Рендер постов с фильтрацией
+        const render = (posts) => {
             const feed = document.getElementById('feed');
             feed.innerHTML = "";
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                const l = data.likes || 0;
+            posts.forEach(p => {
+                const data = p.data;
+                // Генерация ссылки на аватарку на основе имени
+                const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(data.name)}`;
+                
                 feed.innerHTML += `
                     <div class="post">
-                        <span class="time">${data.timestamp?.toDate().toLocaleTimeString() || "секунду..."}</span>
-                        <b>@${data.name}</b>
-                        <p style="margin: 5px 0; color: #94a3b8;">${data.email}</p>
-                        <button class="like-btn" onclick="processLike('${doc.id}', ${l})">🔥 ${l}</button>
+                        <img src="${avatarUrl}" class="avatar" alt="avatar">
+                        <div class="post-content">
+                            <span class="time">${data.timestamp?.toDate().toLocaleTimeString() || "..."}</span>
+                            <b style="display:block; margin-bottom:4px;">${data.name}</b>
+                            <p style="margin: 0 0 10px 0; font-size: 14px; color: #64748b;">${data.email}</p>
+                            <button class="like-btn" onclick="processLike('${p.id}')">❤ ${data.likes || 0}</button>
+                        </div>
                     </div>
                 `;
             });
+        };
+
+        // Слушатель поиска
+        document.getElementById('searchInput').oninput = (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = allPosts.filter(p => 
+                p.data.name.toLowerCase().includes(val) || 
+                p.data.email.toLowerCase().includes(val)
+            );
+            render(filtered);
+        };
+
+        const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
+        onSnapshot(q, (snapshot) => {
+            allPosts = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
+            // Если в поиске пусто — показываем всё
+            if(!document.getElementById('searchInput').value) {
+                render(allPosts);
+            }
         });
     </script>
 </body>
