@@ -3,81 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S.M.S</title>
+    <title>S.M.S V2</title>
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --accent: #58a6ff; }
-        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica; }
+        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --accent: #58a6ff; --me: #23863622; }
+        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); color: #c9d1d9; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; }
 
-        /* Главная оболочка */
-        .app-container { display: flex; flex-direction: column; height: 100vh; max-width: 800px; margin: 0 auto; border-left: 1px solid var(--border); border-right: 1px solid var(--border); position: relative; }
+        .app-container { display: flex; flex-direction: column; height: 100vh; max-width: 700px; margin: 0 auto; border-left: 1px solid var(--border); border-right: 1px solid var(--border); background: var(--bg); }
 
-        /* Шапка с участниками */
-        .header { padding: 15px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        #userCounter { font-size: 14px; color: #8b949e; }
+        /* Шапка */
+        .header { padding: 15px 20px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+        .status-dot { width: 8px; height: 8px; background: #238636; border-radius: 50%; display: inline-block; margin-right: 5px; }
 
-        /* Зона сообщений */
-        #chatMessages { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        /* Чат */
+        #chatMessages { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 4px; scroll-behavior: smooth; }
 
-        /* Стиль сообщения (как в ChatGPT/Gemini) */
-        .msg-row { display: flex; flex-direction: column; width: 100%; border-bottom: 1px solid #21262d; padding-bottom: 15px; }
-        .msg-row.is-me { background: #161b2244; } /* Слегка подсвечиваем свои */
+        .msg-row { padding: 8px 15px; border-radius: 6px; transition: 0.2s; border-left: 3px solid transparent; }
+        .msg-row:hover { background: #161b22; }
+        .msg-row.is-me { background: var(--me); border-left-color: #238636; }
         
-        .msg-author { font-weight: bold; font-size: 13px; color: var(--accent); margin-bottom: 5px; display: flex; align-items: center; gap: 10px; }
-        .msg-text { font-size: 15px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
-        .lvl-badge { font-size: 10px; background: #30363d; padding: 2px 6px; border-radius: 10px; color: #f2cc60; }
+        .msg-meta { font-size: 12px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+        .msg-author { font-weight: bold; color: var(--accent); }
+        .msg-time { color: #8b949e; font-size: 10px; }
+        .msg-text { font-size: 15px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
 
-        /* Поле ввода внизу */
-        .input-area { padding: 20px; background: var(--bg); border-top: 1px solid var(--border); display: flex; gap: 10px; }
-        #msgInput { flex-grow: 1; background: #010409; border: 1px solid var(--border); color: white; padding: 12px 15px; border-radius: 8px; outline: none; font-size: 15px; }
-        #msgInput:focus { border-color: var(--accent); }
-        .send-btn { background: #238636; color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .send-btn:hover { background: #2ea043; }
+        /* Индикатор отправки */
+        .pending { opacity: 0.5; font-style: italic; }
 
-        /* Админка в углу */
-        .admin-trigger { position: fixed; bottom: 100px; right: 20px; background: #f0883e; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 100; font-size: 20px; }
-        .admin-modal { position: fixed; bottom: 150px; right: 20px; width: 250px; background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 12px; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        /* Ввод */
+        .input-area { padding: 15px 20px; background: var(--card); border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        #msgInput { flex-grow: 1; background: #010409; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; outline: none; }
+        .send-btn { background: #238636; color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .send-btn:active { transform: scale(0.95); }
 
         .hidden { display: none !important; }
-        #authOverlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        #auth { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
-    <div id="authOverlay">
+    <div id="auth">
         <div style="background:var(--card); padding:30px; border-radius:12px; border:1px solid var(--border); width:300px; text-align:center;">
-            <h2 style="margin-top:0">Вход в систему</h2>
-            <input type="text" id="regName" placeholder="Никнейм" style="width:100%; padding:12px; margin-bottom:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid var(--border);">
-            <input type="email" id="regEmail" placeholder="Email" style="width:100%; padding:12px; margin-bottom:20px; border-radius:6px; background:#0d1117; color:white; border:1px solid var(--border);">
-            <button onclick="login()" class="send-btn" style="width:100%; height:45px;">Войти</button>
+            <h3>Cloud OS Login</h3>
+            <input type="text" id="regName" placeholder="Никнейм" style="width:100%; padding:10px; margin-bottom:10px; background:#0d1117; color:white; border:1px solid var(--border); border-radius:5px;">
+            <input type="email" id="regEmail" placeholder="Email" style="width:100%; padding:10px; margin-bottom:20px; background:#0d1117; color:white; border:1px solid var(--border); border-radius:5px;">
+            <button onclick="login()" class="send-btn" style="width:100%; height:40px;">Войти</button>
         </div>
     </div>
 
     <div class="app-container">
         <div class="header">
-            <strong>Cloud OS Chat</strong>
-            <span id="userCounter">Загрузка участников...</span>
+            <div><span class="status-dot"></span> <b>Cloud Chat Live</b></div>
+            <div id="uCount" style="font-size: 12px; color: #8b949e;">...</div>
         </div>
 
         <div id="chatMessages"></div>
 
         <div class="input-area">
-            <input type="text" id="msgInput" placeholder="Напишите сообщение..." onkeypress="if(event.key==='Enter') send()">
-            <button onclick="send()" class="send-btn">Отправить</button>
+            <input type="text" id="msgInput" placeholder="Сообщение..." onkeypress="if(event.key==='Enter') send()">
+            <button onclick="send()" class="send-btn">➜</button>
         </div>
-    </div>
-
-    <button id="admKey" class="admin-trigger hidden" onclick="document.getElementById('admBox').classList.toggle('hidden')">🛡️</button>
-    <div id="admBox" class="admin-modal hidden">
-        <h4 style="margin:0 0 10px 0">Админ-панель</h4>
-        <button onclick="clearChat()" style="width:100%; background:#da3633; color:white; border:none; padding:8px; border-radius:5px; cursor:pointer;">Очистить всё</button>
-        <div id="admUserList" style="margin-top:10px; font-size:12px;"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, query, onSnapshot, orderBy, limit, addDoc, deleteDoc, serverTimestamp, increment, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-
-        const ADMIN_EMAIL = "240130@turan-edu.kz";
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, query, onSnapshot, orderBy, limit, addDoc, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDIuPsxUWVwJ1rVl1ytjVUHA84L4nQlwrM",
@@ -91,90 +80,79 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         let user = JSON.parse(localStorage.getItem('cloudUser'));
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3'); // Звук уведомления
 
+        // Вход
         window.login = async () => {
             const n = document.getElementById('regName').value;
             const e = document.getElementById('regEmail').value.trim();
-            if(!n || !e) return alert("Заполни поля!");
+            if(!n || !e) return;
             const id = e.replace(/\./g, '_');
             const ref = doc(db, "users", id);
             if(!(await getDoc(ref)).exists()) {
-                await setDoc(ref, { name: n, email: e, xp: 0, joined: Date.now(), muted: false });
+                await setDoc(ref, { name: n, email: e, xp: 0, muted: false });
             }
             localStorage.setItem('cloudUser', JSON.stringify({id, name: n, email: e}));
             location.reload();
         };
 
-        if(user) {
-            document.getElementById('authOverlay').classList.add('hidden');
-            if(user.email === ADMIN_EMAIL) document.getElementById('admKey').classList.remove('hidden');
-        }
+        if(user) document.getElementById('auth').classList.add('hidden');
 
+        // МГНОВЕННАЯ ОТПРАВКА
         window.send = async () => {
             const inp = document.getElementById('msgInput');
-            if(!inp.value.trim() || !user) return;
-            const text = inp.value; inp.value = "";
+            const val = inp.value.trim();
+            if(!val || !user) return;
+            inp.value = ""; 
+
             try {
-                await addDoc(collection(db, "messages"), { uid: user.id, name: user.name, text, time: serverTimestamp() });
-                await updateDoc(doc(db, "users", user.id), { xp: increment(5) });
-            } catch(e) { console.error("Ошибка! Проверь Rules в консоли."); }
+                // Firebase добавит это в локальный кэш мгновенно
+                await addDoc(collection(db, "messages"), {
+                    uid: user.id,
+                    name: user.name,
+                    text: val,
+                    time: serverTimestamp()
+                });
+                updateDoc(doc(db, "users", user.id), { xp: increment(2) });
+            } catch(e) { console.error(e); }
         };
 
-        // Живой чат
-        onSnapshot(query(collection(db, "messages"), orderBy("time", "asc"), limit(50)), (snap) => {
+        // СЛУШАТЕЛЬ СООБЩЕНИЙ (Optimized)
+        const q = query(collection(db, "messages"), orderBy("time", "desc"), limit(30));
+        let firstLoad = true;
+
+        onSnapshot(q, (snap) => {
             const box = document.getElementById('chatMessages');
+            const messages = [];
+            
+            snap.forEach(d => messages.unshift({id: d.id, ...d.data()}));
+
             box.innerHTML = "";
-            snap.forEach(d => {
-                const m = d.data();
-                if(!m.time) return;
+            messages.forEach(m => {
                 const isMe = user && m.uid === user.id;
+                const isPending = !m.time; // Если сервер еще не поставил время
+                
                 box.innerHTML += `
-                    <div class="msg-row ${isMe ? 'is-me' : ''}">
-                        <div class="msg-author">${m.name} ${isMe ? '<span class="lvl-badge">Вы</span>' : ''}</div>
+                    <div class="msg-row ${isMe ? 'is-me' : ''} ${isPending ? 'pending' : ''}">
+                        <div class="msg-meta">
+                            <span class="msg-author">${m.name}</span>
+                            <span class="msg-time">${isPending ? 'отправка...' : 'доставлено'}</span>
+                        </div>
                         <div class="msg-text">${m.text}</div>
                     </div>
                 `;
             });
+
             box.scrollTop = box.scrollHeight;
+            
+            if(!firstLoad && !snap.metadata.hasPendingWrites) {
+                audio.play().catch(() => {}); // Звук при новом сообщении
+            }
+            firstLoad = false;
         });
 
-        // Участники и Админка
-        onSnapshot(collection(db, "users"), (snap) => {
-            document.getElementById('userCounter').innerText = `Участников: ${snap.size}`;
-            const admList = document.getElementById('admUserList');
-            admList.innerHTML = "";
-            snap.forEach(d => {
-                const u = d.data();
-                if(user && user.email === ADMIN_EMAIL && u.email !== ADMIN_EMAIL) {
-                    admList.innerHTML += `
-                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                            <span>${u.name}</span>
-                            <button onclick="toggleMute('${d.id}', ${!u.muted})">${u.muted ? 'Размутить' : 'Мут'}</button>
-                        </div>
-                    `;
-                }
-            });
-        });
-
-        window.toggleMute = async (id, s) => await updateDoc(doc(db, "users", id), { muted: s });
-
-        window.clearChat = async () => {
-            if(!confirm("Удалить ВСЕ сообщения из базы?")) return;
-            const q = await getDocs(collection(db, "messages"));
-            const batch = writeBatch(db);
-            q.forEach(d => batch.delete(d.ref));
-            await batch.commit();
-        };
-
-        // Слежка за мутом
-        if(user) {
-            onSnapshot(doc(db, "users", user.id), (d) => {
-                if(d.exists() && d.data().muted) {
-                    document.getElementById('msgInput').disabled = true;
-                    document.getElementById('msgInput').placeholder = "Вы замучены администратором";
-                }
-            });
-        }
+        // Счетчик юзеров
+        onSnapshot(collection(db, "users"), s => document.getElementById('uCount').innerText = `В базе: ${s.size}`);
     </script>
 </body>
 </html>
