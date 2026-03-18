@@ -4,68 +4,68 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Super Mega Site</title>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root { --accent: #6366f1; --bg: #0d1117; --card: #161b22; --admin: #f59e0b; --danger: #f85149; --success: #238636; }
-        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: white; margin: 0; display: flex; height: 100vh; }
-        
-        /* Чат */
-        .main-container { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
-        #chatMessages { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-        
-        /* Сообщения */
-        .msg { max-width: 70%; padding: 12px; border-radius: 12px; background: #21262d; position: relative; border: 1px solid #30363d; }
-        .msg.is-me { align-self: flex-end; background: #23863633; border-color: var(--success); }
-        .msg-info { font-size: 11px; display: flex; gap: 8px; margin-bottom: 5px; color: #8b949e; }
-        .role-tag { padding: 1px 4px; border-radius: 3px; font-weight: bold; font-size: 9px; text-transform: uppercase; }
-        
-        /* Реакции */
-        .reactions { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
-        .react-btn { background: #30363d; border: none; color: white; border-radius: 10px; padding: 2px 6px; font-size: 12px; cursor: pointer; }
+        :root { --accent: #6366f1; --bg: #0d1117; --sidebar: #161b22; --msg-in: #21262d; --msg-out: #23863633; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        /* Плавающая админка */
-        .admin-trigger { position: fixed; top: 20px; right: 20px; z-index: 1000; background: var(--admin); color: black; border: none; padding: 12px; border-radius: 50%; cursor: pointer; font-size: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .admin-panel { position: fixed; top: 80px; right: 20px; width: 300px; max-height: 70vh; background: var(--card); border: 1px solid #30363d; border-radius: 15px; padding: 15px; z-index: 1000; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+        /* Левая панель: Участники */
+        .sidebar { width: 260px; background: var(--sidebar); border-right: 1px solid #30363d; display: flex; flex-direction: column; padding: 15px; }
+        .user-item { padding: 10px; border-radius: 8px; margin-bottom: 5px; background: #0d1117; border: 1px solid #30363d; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+        .lvl-tag { color: #f59e0b; font-weight: bold; font-size: 10px; }
 
-        /* Панель ввода */
-        .input-area { padding: 20px; background: var(--card); border-top: 1px solid #30363d; display: flex; flex-direction: column; gap: 10px; }
-        .input-row { display: flex; gap: 10px; align-items: center; }
-        input[type="text"] { flex-grow: 1; background: #010409; border: 1px solid #30363d; color: white; padding: 12px; border-radius: 8px; }
-        .action-btn { background: #30363d; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
-        #sendBtn { background: var(--accent); padding: 12px 24px; font-weight: bold; }
+        /* Основная область: Чат */
+        .chat-container { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
+        #chatMessages { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* Стили сообщений */
+        .msg { max-width: 70%; padding: 12px; border-radius: 12px; position: relative; line-height: 1.4; border: 1px solid #30363d; }
+        .msg.in { align-self: flex-start; background: var(--msg-in); }
+        .msg.out { align-self: flex-end; background: var(--msg-out); border-color: #238636; }
+        .msg b { display: block; font-size: 11px; margin-bottom: 4px; color: var(--accent); }
+        .del-btn { position: absolute; top: 5px; right: 8px; color: #f85149; cursor: pointer; font-weight: bold; }
+
+        /* Нижняя панель ввода */
+        .input-bar { padding: 20px; background: var(--sidebar); border-top: 1px solid #30363d; display: flex; gap: 10px; align-items: center; }
+        #msgInput { flex-grow: 1; background: #010409; border: 1px solid #30363d; color: white; padding: 12px; border-radius: 10px; outline: none; }
+        .btn { padding: 12px 20px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-send { background: var(--accent); color: white; }
+        .btn-send:hover { opacity: 0.8; }
+
+        /* Админка (Плавающая кнопка) */
+        .admin-key { position: fixed; top: 20px; right: 20px; background: #f59e0b; border: none; padding: 10px; border-radius: 50%; cursor: pointer; z-index: 100; font-size: 20px; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+        .admin-modal { position: fixed; top: 75px; right: 20px; width: 280px; background: var(--sidebar); border: 1px solid #30363d; border-radius: 15px; padding: 15px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
 
         .hidden { display: none !important; }
-        .lvl-badge { color: var(--admin); font-weight: bold; font-size: 10px; }
     </style>
 </head>
 <body>
 
-    <div id="authOverlay" style="position:fixed; inset:0; background:var(--bg); z-index:2000; display:flex; align-items:center; justify-content:center;">
-        <div style="background:var(--card); padding:30px; border-radius:20px; width:300px; text-align:center;">
+    <div id="authScreen" style="position:fixed; inset:0; background:var(--bg); z-index:1000; display:flex; align-items:center; justify-content:center;">
+        <div style="background:var(--sidebar); padding:30px; border-radius:20px; width:300px; text-align:center; border:1px solid #30363d;">
             <h2>Cloud OS</h2>
-            <input type="text" id="uName" placeholder="Никнейм" style="width:100%; margin-bottom:10px; padding:10px; border-radius:5px;">
-            <input type="email" id="uEmail" placeholder="Email" style="width:100%; margin-bottom:15px; padding:10px; border-radius:5px;">
-            <button onclick="login()" style="width:100%; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer;">Войти</button>
+            <input type="text" id="regName" placeholder="Никнейм" style="width:90%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #334155; background:#0d1117; color:white;">
+            <input type="email" id="regEmail" placeholder="Email" style="width:90%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid #334155; background:#0d1117; color:white;">
+            <button onclick="doLogin()" class="btn btn-send" style="width:100%">ВОЙТИ В ОБЛАКО</button>
         </div>
     </div>
 
-    <button id="admTrigger" class="admin-trigger hidden" onclick="document.getElementById('admPanel').classList.toggle('hidden')">🛡️</button>
-    <div id="admPanel" class="admin-panel hidden">
-        <h4 style="margin:0 0 10px 0">Управление Облаком</h4>
-        <div id="admUserList"></div>
+    <button id="adminBtn" class="admin-key hidden" onclick="document.getElementById('adminModal').classList.toggle('hidden')">🛡️</button>
+    <div id="adminModal" class="admin-modal hidden">
+        <h4 style="margin-top:0">Админ-центр</h4>
+        <div id="adminUserList"></div>
     </div>
 
-    <div class="main-container">
+    <div class="sidebar">
+        <h3>👥 Участники</h3>
+        <div id="userList" style="flex-grow:1; overflow-y:auto;"></div>
+        <button onclick="localStorage.clear(); location.reload();" style="background:none; border:1px solid #f85149; color:#f85149; padding:8px; border-radius:8px; cursor:pointer; margin-top:10px;">Выход</button>
+    </div>
+
+    <div class="chat-container">
         <div id="chatMessages"></div>
-        
-        <div class="input-area">
-            <div class="input-row">
-                <button class="action-btn" title="Файл" onclick="document.getElementById('fileInput').click()">📎</button>
-                <input type="file" id="fileInput" class="hidden" onchange="sendFile(this)">
-                <input type="text" id="msgInput" placeholder="Сообщение, ссылка на GIF или эмодзи..." onkeypress="if(event.key==='Enter') sendMsg()">
-                <button id="sendBtn" class="action-btn" onclick="sendMsg()">ОТПРАВИТЬ</button>
-            </div>
-            <div id="muteLabel" class="hidden" style="color:red; text-align:center; font-size:12px;">Вы замучены администратором</div>
+        <div class="input-bar">
+            <input type="text" id="msgInput" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter') doSend()">
+            <button id="sendBtn" class="btn btn-send" onclick="doSend()">ОТПРАВИТЬ</button>
         </div>
     </div>
 
@@ -73,7 +73,8 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
         import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, query, onSnapshot, orderBy, limit, addDoc, deleteDoc, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-        const SUPER_ADMIN_EMAIL = "240130@turan-edu.kz"; // УКАЖИ СВОЙ EMAIL ЗДЕСЬ
+        // !!! ВАЖНО: ЗАМЕНИ НА СВОЙ EMAIL ДЛЯ ПОЛУЧЕНИЯ ПРАВ АДМИНА !!!
+        const MY_ADMIN_EMAIL = "240130@turan-edu.kz"; 
 
         const firebaseConfig = {
             apiKey: "AIzaSyDIuPsxUWVwJ1rVl1ytjVUHA84L4nQlwrM",
@@ -86,118 +87,115 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        let currentUser = JSON.parse(localStorage.getItem('cloudUser'));
+        let me = JSON.parse(localStorage.getItem('cloudUser'));
 
-        // --- ЛОГИКА ВХОДА ---
-        window.login = async () => {
-            const name = document.getElementById('uName').value;
-            const email = document.getElementById('uEmail').value.trim();
-            if(!name || !email) return;
-
+        // Функция Входа
+        window.doLogin = async () => {
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value.trim();
+            if(!name || !email) return alert("Заполни все поля!");
+            
             const id = email.replace(/\./g, '_');
             const userRef = doc(db, "users", id);
             const snap = await getDoc(userRef);
-
+            
             if(!snap.exists()) {
-                await setDoc(userRef, { name, email, joined: Date.now(), xp: 0, warns: 0, muted: false, banned: false, role: 'user' });
+                await setDoc(userRef, { name, email, xp: 0, muted: false, banned: false, joined: Date.now() });
             }
-            localStorage.setItem('cloudUser', JSON.stringify({id, email, name}));
+            localStorage.setItem('cloudUser', JSON.stringify({id, name, email}));
             location.reload();
         };
 
-        if(currentUser) {
-            document.getElementById('authOverlay').classList.add('hidden');
-            if(currentUser.email === SUPER_ADMIN_EMAIL) document.getElementById('admTrigger').classList.remove('hidden');
+        if(me) {
+            document.getElementById('authScreen').classList.add('hidden');
+            if(me.email === MY_ADMIN_EMAIL) document.getElementById('adminBtn').classList.remove('hidden');
         }
 
-        // --- ЧАТ И ФУНКЦИИ ---
-        window.sendMsg = async () => {
-            const val = document.getElementById('msgInput').value.trim();
-            if(!val) return;
+        // Функция Отправки
+        window.doSend = async () => {
+            const input = document.getElementById('msgInput');
+            if(!input.value.trim() || !me) return;
             
-            let type = 'text';
-            if(val.includes('giphy.com') || val.includes('.gif') || val.includes('.png')) type = 'media';
-
-            await addDoc(collection(db, "messages"), {
-                uid: currentUser.id, name: currentUser.name, text: val, type, time: serverTimestamp(), reactions: {}
-            });
-            await updateDoc(doc(db, "users", currentUser.id), { xp: increment(10) });
-            document.getElementById('msgInput').value = "";
+            try {
+                await addDoc(collection(db, "messages"), {
+                    uid: me.id, name: me.name, text: input.value, time: serverTimestamp()
+                });
+                await updateDoc(doc(db, "users", me.id), { xp: increment(10) });
+                input.value = "";
+            } catch (e) { alert("Ошибка доступа! Проверь правила Firestore."); }
         };
 
-        window.sendFile = (el) => {
-            alert("Файл выбран! (В этой версии имитация загрузки: " + el.files[0].name + ")");
-            sendMsg("[Файл: " + el.files[0].name + "]");
-        };
-
-        window.addReaction = async (mid, emoji) => {
-            const mRef = doc(db, "messages", mid);
-            const snap = await getDoc(mRef);
-            let reacts = snap.data().reactions || {};
-            reacts[emoji] = (reacts[emoji] || 0) + 1;
-            await updateDoc(mRef, { reactions: reacts });
-        };
-
-        // --- РЕНДЕРИНГ ЧАТА ---
-        onSnapshot(query(collection(db, "messages"), orderBy("time", "asc"), limit(50)), (snap) => {
-            const chat = document.getElementById('chatMessages');
-            chat.innerHTML = "";
+        // Чат в реальном времени
+        onSnapshot(query(collection(db, "messages"), orderBy("time", "asc"), limit(100)), (snap) => {
+            const box = document.getElementById('chatMessages');
+            box.innerHTML = "";
             snap.forEach(d => {
                 const m = d.data();
-                const isMe = currentUser && m.uid === currentUser.id;
-                const isAdmin = currentUser && currentUser.email === SUPER_ADMIN_EMAIL;
+                const isMe = me && m.uid === me.id;
+                const isAdmin = me && me.email === MY_ADMIN_EMAIL;
                 
-                let content = m.type === 'media' ? `<img src="${m.text}" style="width:100%; border-radius:8px; margin-top:5px;">` : m.text;
-                let reactsHtml = Object.entries(m.reactions || {}).map(([e, c]) => `<span class="react-btn">${e} ${c}</span>`).join('');
-
-                chat.innerHTML += `
-                    <div class="msg ${isMe ? 'is-me' : ''}">
-                        <div class="msg-info">
-                            <b>${m.name}</b>
-                            ${isAdmin ? `<span onclick="deleteDoc(doc(db,'messages','${d.id}'))" style="cursor:pointer;color:red">Удалить</span>` : ''}
-                        </div>
-                        <div>${content}</div>
-                        <div class="reactions">
-                            ${reactsHtml}
-                            <button class="react-btn" onclick="addReaction('${d.id}', '👍')">+</button>
-                        </div>
+                box.innerHTML += `
+                    <div class="msg ${isMe ? 'out' : 'in'}">
+                        ${isAdmin ? `<span class="del-btn" onclick="deleteMessage('${d.id}')">×</span>` : ''}
+                        <b>${m.name}</b>
+                        <span>${m.text}</span>
                     </div>
                 `;
             });
-            chat.scrollTop = chat.scrollHeight;
+            box.scrollTop = box.scrollHeight;
         });
 
-        // --- АДМИН-ПАНЕЛЬ (ВНУТРИ ОКНА) ---
+        window.deleteMessage = async (id) => { await deleteDoc(doc(db, "messages", id)); };
+
+        // Список участников и Админка
         onSnapshot(collection(db, "users"), (snap) => {
-            const admList = document.getElementById('admUserList');
-            admList.innerHTML = "";
+            const uList = document.getElementById('userList');
+            const admList = document.getElementById('adminUserList');
+            uList.innerHTML = ""; admList.innerHTML = "";
+
             snap.forEach(d => {
                 const u = d.data();
                 const uid = d.id;
-                if(u.email === SUPER_ADMIN_EMAIL) return;
+                const lvl = Math.floor((u.xp || 0) / 100);
 
-                admList.innerHTML += `
-                    <div style="background:#0d1117; padding:10px; margin-bottom:5px; border-radius:8px; font-size:12px;">
-                        <b>${u.name}</b> (LVL: ${Math.floor(u.xp/100)})
-                        <div style="margin-top:5px; display:flex; gap:4px;">
-                            <button onclick="updateDoc(doc(db,'users','${uid}'), {muted: ${!u.muted}})">${u.muted ? 'Размутить' : 'Мут'}</button>
-                            <button onclick="updateDoc(doc(db,'users','${uid}'), {banned: true})">Бан</button>
-                            <button onclick="updateDoc(doc(db,'users','${uid}'), {warns: increment(1)})">Варн</button>
-                        </div>
+                uList.innerHTML += `
+                    <div class="user-item">
+                        <span>${u.name}</span>
+                        <span class="lvl-tag">LVL ${lvl}</span>
                     </div>
                 `;
+
+                if(me && me.email === MY_ADMIN_EMAIL && u.email !== MY_ADMIN_EMAIL) {
+                    admList.innerHTML += `
+                        <div style="font-size:12px; border-bottom:1px solid #444; padding:5px; display:flex; justify-content:space-between;">
+                            <span>${u.name}</span>
+                            <div>
+                                <button onclick="toggleMute('${uid}', ${!u.muted})">${u.muted ? '🔊' : '🔇'}</button>
+                                <button onclick="banUser('${uid}')">🚫</button>
+                            </div>
+                        </div>
+                    `;
+                }
             });
         });
 
-        // --- ПРОВЕРКА СТАТУСА (МУТ/БАН) ---
-        if(currentUser) {
-            onSnapshot(doc(db, "users", currentUser.id), (d) => {
+        window.toggleMute = async (id, state) => { await updateDoc(doc(db, "users", id), { muted: state }); };
+        window.banUser = async (id) => { await updateDoc(doc(db, "users", id), { banned: true }); };
+
+        // Проверка мута/бана текущего юзера
+        if(me) {
+            onSnapshot(doc(db, "users", me.id), (d) => {
                 const data = d.data();
                 if(data.banned) { localStorage.clear(); location.reload(); }
-                const isMuted = data.muted;
-                document.getElementById('msgInput').disabled = isMuted;
-                document.getElementById('sendBtn').classList.toggle('hidden', isMuted);
-                document.getElementById('muteLabel').classList.toggle('hidden', !isMuted);
+                if(data.muted) {
+                    document.getElementById('msgInput').disabled = true;
+                    document.getElementById('msgInput').placeholder = "У вас МУТ";
+                    document.getElementById('sendBtn').classList.add('hidden');
+                } else {
+                    document.getElementById('msgInput').disabled = false;
+                    document.getElementById('msgInput').placeholder = "Введите сообщение...";
+                    document.getElementById('sendBtn').classList.remove('hidden');
+                }
             });
         }
     </script>
