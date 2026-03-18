@@ -6,68 +6,82 @@
     <title>Super Mega Site</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root { --accent: #6366f1; --bg: #0f172a; --card: #1e293b; --up: #10b981; --down: #ef4444; --gold: #f59e0b; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        :root { --accent: #6366f1; --bg: #0b0f1a; --card: #161b22; --admin: #f59e0b; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        .reg-box { width: 100%; max-width: 400px; background: var(--card); padding: 25px; border-radius: 24px; border: 1px solid #334155; text-align: center; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        input { width: 100%; padding: 12px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 12px; box-sizing: border-box; outline: none; }
+        /* Боковая панель (Профили) */
+        .sidebar { width: 350px; background: var(--card); border-right: 1px solid #30363d; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; }
         
-        .main-btn { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
-        .main-btn:hover { background: #4f46e5; }
-
-        /* Бейджи ролей */
-        .badge { font-size: 10px; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; font-weight: 800; margin-bottom: 5px; display: inline-block; letter-spacing: 0.5px; }
-        .role-admin { background: var(--gold); color: #000; box-shadow: 0 0 10px rgba(245, 158, 11, 0.3); }
-        .role-vip { background: #ec4899; color: white; }
-        .role-user { background: #475569; color: white; }
-
-        /* Список */
-        #userList { width: 100%; max-width: 450px; }
-        .user-card { background: var(--card); margin-bottom: 12px; padding: 16px; border-radius: 20px; border: 1px solid #334155; display: flex; align-items: center; gap: 15px; transition: 0.3s; }
-        .is-me { border-color: var(--accent); background: #1e294b; }
+        /* Основная область (Чат) */
+        .chat-area { flex-grow: 1; display: flex; flex-direction: column; background: #0d1117; }
+        #chatMessages { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
         
-        .avatar { width: 50px; height: 50px; border-radius: 15px; background: #0f172a; border: 1px solid #334155; }
-        .info { flex-grow: 1; }
-        .info b { display: block; font-size: 16px; margin-bottom: 2px; }
+        /* Сообщения */
+        .msg { max-width: 80%; padding: 10px 15px; border-radius: 15px; background: #21262d; position: relative; animation: fadeIn 0.3s; }
+        .msg.is-me { align-self: flex-end; background: var(--accent); }
+        .msg b { display: block; font-size: 12px; margin-bottom: 4px; opacity: 0.8; }
+        .msg img.sticker { width: 100px; display: block; margin-top: 5px; }
+        .msg .delete-btn { position: absolute; top: 5px; right: 5px; cursor: pointer; display: none; background: rgba(0,0,0,0.5); border-radius: 50%; width: 18px; height: 18px; font-size: 10px; text-align: center; }
+        .msg:hover .delete-btn { display: block; }
 
-        /* Кнопки для админа */
-        .admin-controls { display: flex; gap: 5px; margin-top: 8px; }
-        .adm-btn { background: #334155; border: none; color: #cbd5e1; font-size: 10px; padding: 5px 10px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
-        .adm-btn:hover { background: var(--accent); color: white; }
-
-        .rating-box { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
-        .vote-btn { background: #0f172a; border: 1px solid #334155; color: white; padding: 6px 12px; border-radius: 10px; cursor: pointer; font-size: 13px; }
+        /* Панель ввода */
+        .input-panel { padding: 20px; background: var(--card); border-top: 1px solid #30363d; }
+        .controls { display: flex; gap: 10px; margin-bottom: 10px; }
+        .input-row { display: flex; gap: 10px; }
+        input#msgInput { flex-grow: 1; background: #0d1117; border: 1px solid #30363d; color: white; padding: 12px; border-radius: 10px; }
         
-        .hidden { display: none; }
-        .time-label { font-size: 9px; color: #64748b; }
+        /* Админка */
+        .user-card { background: #21262d; padding: 10px; border-radius: 12px; margin-bottom: 10px; font-size: 13px; border: 1px solid transparent; }
+        .user-card.is-admin { border-color: var(--admin); }
+        .admin-actions { margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap; }
+        .adm-btn { font-size: 10px; padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer; background: #30363d; color: white; }
+        .adm-btn.danger { background: #f85149; }
+
+        .badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-right: 5px; }
+        .bg-admin { background: var(--admin); color: black; }
+        .hidden { display: none !important; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-    <div id="authPanel" class="reg-box">
-        <h2 style="margin-top:0">☁️ Cloud Enter</h2>
-        <input type="text" id="uName" placeholder="Никнейм">
-        <input type="email" id="uEmail" placeholder="Email">
-        <button class="main-btn" id="goBtn">ВОЙТИ</button>
+    <div id="authOverlay" style="position:fixed; inset:0; background:var(--bg); z-index:100; display:flex; align-items:center; justify-content:center;">
+        <div style="background:var(--card); padding:40px; border-radius:24px; text-align:center; width:300px;">
+            <h3>Cloud OS Login</h3>
+            <input type="text" id="uName" placeholder="Никнейм" style="width:100%; margin-bottom:10px; padding:10px; border-radius:8px; background:#000; border:1px solid #334155; color:white;">
+            <input type="email" id="uEmail" placeholder="Email" style="width:100%; margin-bottom:20px; padding:10px; border-radius:8px; background:#000; border:1px solid #334155; color:white;">
+            <button onclick="login()" style="width:100%; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer;">Войти в систему</button>
+        </div>
     </div>
 
-    <div id="myProfile" class="reg-box hidden">
-        <div style="display:flex; align-items:center; gap:15px; text-align:left;">
-            <img id="myAv" class="avatar">
-            <div>
-                <div id="myRoleBadge"></div>
-                <h4 id="helloText" style="margin:0"></h4>
+    <div class="sidebar">
+        <h4>Жители (Админ-панель)</h4>
+        <div id="userList"></div>
+        <hr style="width:100%; border:0; border-top:1px solid #30363d; margin: 20px 0;">
+        <button onclick="localStorage.clear(); location.reload();" style="background:none; border:1px solid #f85149; color:#f85149; cursor:pointer; padding:10px; border-radius:8px;">Выйти</button>
+    </div>
+
+    <div class="chat-area">
+        <div id="chatMessages"></div>
+        
+        <div class="input-panel">
+            <div class="controls">
+                <button onclick="sendMedia('😎')" class="adm-btn">😎</button>
+                <button onclick="sendMedia('🔥')" class="adm-btn">🔥</button>
+                <button onclick="sendMedia('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueGZ3bmZ6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKMGpxS7SPO6Fsk/giphy.gif', true)" class="adm-btn">GIF Dance</button>
+                <button onclick="sendMedia('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHRueGZ3bmZ6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/26vUu9bH3S8Y2vG8w/giphy.gif', true)" class="adm-btn">GIF Wow</button>
+            </div>
+            <div class="input-row">
+                <input type="text" id="msgInput" placeholder="Напишите сообщение..." onkeypress="if(event.key==='Enter') sendMsg()">
+                <button onclick="sendMsg()" class="main-btn" style="padding: 0 20px; background:var(--accent); border:none; border-radius:10px; color:white; cursor:pointer;">Отправить</button>
             </div>
         </div>
-        <button onclick="localStorage.clear(); location.reload();" style="margin-top:15px; width:100%; background:none; border:1px solid #334155; color:#94a3b8; cursor:pointer; padding:8px; border-radius:10px; font-size:12px;">Выйти из профиля</button>
     </div>
-
-    <div id="userList"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
         import { 
-            getFirestore, collection, doc, setDoc, getDoc, updateDoc, increment, query, onSnapshot, orderBy, limit, getDocs 
+            getFirestore, collection, doc, setDoc, getDoc, updateDoc, increment, query, onSnapshot, orderBy, limit, addDoc, deleteDoc, serverTimestamp 
         } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -81,101 +95,120 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        
+        let currentUser = JSON.parse(localStorage.getItem('cloudUser'));
+        let adminId = "";
 
-        let adminId = ""; // Здесь будем хранить ID самого первого юзера
-
-        // Глобальные функции
-        window.changeRole = async (targetId, currentRole) => {
-            const newRole = currentRole === 'vip' ? 'user' : 'vip';
-            await updateDoc(doc(db, "users", targetId), { customRole: newRole });
+        // --- ЛОГИКА ВХОДА ---
+        window.login = async () => {
+            const name = document.getElementById('uName').value;
+            const email = document.getElementById('uEmail').value;
+            if(!name || !email) return;
+            const id = email.replace(/\./g, '_');
+            const userRef = doc(db, "users", id);
+            const snap = await getDoc(userRef);
+            
+            let data = snap.exists() ? snap.data() : { name, email, joined: Date.now(), banned: false };
+            if(!snap.exists()) await setDoc(userRef, data);
+            
+            if(data.banned) return alert("Вы забанены!");
+            
+            localStorage.setItem('cloudUser', JSON.stringify({id, ...data}));
+            location.reload();
         };
 
-        window.handleVote = async (userId) => {
-            await updateDoc(doc(db, "users", userId), { likes: increment(1) });
+        if(currentUser) document.getElementById('authOverlay').classList.add('hidden');
+
+        // --- ЛОГИКА ЧАТА ---
+        window.sendMsg = async () => {
+            const text = document.getElementById('msgInput').value;
+            if(!text.trim()) return;
+            await addDoc(collection(db, "messages"), {
+                uid: currentUser.id,
+                name: currentUser.name,
+                text: text,
+                type: 'text',
+                time: serverTimestamp()
+            });
+            document.getElementById('msgInput').value = "";
         };
 
-        // Вход
-        document.getElementById('goBtn').onclick = async () => {
-            const email = document.getElementById('uEmail').value.trim();
-            const name = document.getElementById('uName').value.trim();
-            if (!email || !name) return alert("Заполни все поля!");
-
-            const docId = email.replace(/\./g, '_');
-            const userRef = doc(db, "users", docId);
-            const userSnap = await getDoc(userRef);
-
-            if (!userSnap.exists()) {
-                const newUser = { 
-                    name, 
-                    email, 
-                    likes: 0, 
-                    joined: Date.now(), // Используем число для точного сравнения времени
-                    customRole: 'user' 
-                };
-                await setDoc(userRef, newUser);
-                localStorage.setItem('cloudUser', JSON.stringify({id: docId, ...newUser}));
-            } else {
-                localStorage.setItem('cloudUser', JSON.stringify({id: docId, ...userSnap.data()}));
-            }
-            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-            setTimeout(() => location.reload(), 1000);
+        window.sendMedia = async (content, isGif = false) => {
+            await addDoc(collection(db, "messages"), {
+                uid: currentUser.id,
+                name: currentUser.name,
+                text: content,
+                type: isGif ? 'gif' : 'emoji',
+                time: serverTimestamp()
+            });
         };
 
-        const saved = JSON.parse(localStorage.getItem('cloudUser'));
-        if (saved) {
-            document.getElementById('authPanel').classList.add('hidden');
-            document.getElementById('myProfile').classList.remove('hidden');
-        }
+        // Слушаем сообщения
+        onSnapshot(query(collection(db, "messages"), orderBy("time", "asc"), limit(50)), (snap) => {
+            const chat = document.getElementById('chatMessages');
+            chat.innerHTML = "";
+            snap.forEach(d => {
+                const m = d.data();
+                const isMe = currentUser && m.uid === currentUser.id;
+                const isAdmin = currentUser && currentUser.id === adminId;
+                
+                let content = m.type === 'gif' ? `<img src="${m.text}" class="sticker">` : m.text;
+                
+                chat.innerHTML += `
+                    <div class="msg ${isMe ? 'is-me' : ''}">
+                        <b>${m.name}</b>
+                        ${content}
+                        ${isAdmin ? `<div class="delete-btn" onclick="deleteMsg('${d.id}')">×</div>` : ''}
+                    </div>
+                `;
+            });
+            chat.scrollTop = chat.scrollHeight;
+        });
 
-        // ЖИВОЙ МОНИТОРИНГ СПИСКА И ОПРЕДЕЛЕНИЕ АДМИНА
+        // --- ЛОГИКА АДМИНКИ ---
+        window.deleteMsg = async (id) => await deleteDoc(doc(db, "messages", id));
+        window.banUser = async (id, status) => await updateDoc(doc(db, "users", id), { banned: status });
+        window.setVIP = async (id, status) => await updateDoc(doc(db, "users", id), { isVIP: status });
+
         onSnapshot(query(collection(db, "users"), orderBy("joined", "asc")), (snap) => {
+            adminId = snap.docs[0].id; // Самый первый - админ
             const list = document.getElementById('userList');
             list.innerHTML = "";
             
-            // Самый первый в списке (orderBy asc) — это админ
-            const firstDoc = snap.docs[0];
-            adminId = firstDoc ? firstDoc.id : "";
-
             snap.forEach(d => {
                 const u = d.data();
                 const uid = d.id;
-                const isAdmin = uid === adminId;
-                const isMe = saved && saved.id === uid;
-                
-                // Определяем роль для отображения
-                const displayRole = isAdmin ? 'admin' : (u.customRole || 'user');
-                const dateString = new Date(u.joined).toLocaleDateString();
-
-                // Обновляем шапку своего профиля, если это мы
-                if (isMe) {
-                    document.getElementById('helloText').innerText = u.name;
-                    document.getElementById('myAv').src = `https://api.dicebear.com/7.x/bottts/svg?seed=${u.name}`;
-                    document.getElementById('myRoleBadge').innerHTML = `<span class="badge role-${displayRole}">${displayRole}</span>`;
-                }
+                const isThisAdmin = uid === adminId;
+                const amIAdmin = currentUser && currentUser.id === adminId;
 
                 list.innerHTML += `
-                    <div class="user-card ${isMe ? 'is-me' : ''}">
-                        <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${u.name}" class="avatar">
-                        <div class="info">
-                            <span class="badge role-${displayRole}">${displayRole}</span>
-                            <b>${isAdmin ? '👑 ' : ''}${u.name}</b>
-                            <span class="time-label">В облаке с ${dateString}</span>
-                            
-                            ${saved && saved.id === adminId && !isAdmin ? `
-                                <div class="admin-controls">
-                                    <button class="adm-btn" onclick="changeRole('${uid}', '${u.customRole}')">
-                                        Сделать ${u.customRole === 'vip' ? 'User' : 'VIP'}
-                                    </button>
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div class="rating-box">
-                            <button class="vote-btn" onclick="handleVote('${uid}')">👍 ${u.likes || 0}</button>
-                        </div>
+                    <div class="user-card ${isThisAdmin ? 'is-admin' : ''}">
+                        ${isThisAdmin ? '<span class="badge bg-admin">Admin</span>' : ''}
+                        ${u.isVIP ? '<span class="badge" style="background:magenta">VIP</span>' : ''}
+                        <b>${u.name}</b>
+                        ${u.banned ? '<span style="color:red"> [BANNED]</span>' : ''}
+                        
+                        ${amIAdmin && !isThisAdmin ? `
+                            <div class="admin-actions">
+                                <button class="adm-btn" onclick="setVIP('${uid}', ${!u.isVIP})">VIP</button>
+                                <button class="adm-btn danger" onclick="banUser('${uid}', ${!u.banned})">${u.banned ? 'Unban' : 'Ban'}</button>
+                            </div>
+                        ` : ''}
                     </div>
                 `;
             });
         });
+
+        // Проверка бана в реальном времени
+        if(currentUser) {
+            onSnapshot(doc(db, "users", currentUser.id), (d) => {
+                if(d.exists() && d.data().banned) {
+                    localStorage.clear();
+                    alert("Вас забанили!");
+                    location.reload();
+                }
+            });
+        }
     </script>
 </body>
 </html>
