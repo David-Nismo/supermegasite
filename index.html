@@ -6,67 +6,52 @@
     <title>Super Mega Site</title>
     <style>
         :root { --accent: #6366f1; --bg: #0f172a; --card: #1e293b; --up: #10b981; --down: #ef4444; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; min-height: 100vh; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
         
-        .reg-box { width: 100%; max-width: 400px; background: var(--card); padding: 25px; border-radius: 20px; border: 1px solid #334155; text-align: center; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        input { width: 100%; padding: 12px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 10px; box-sizing: border-box; outline: none; }
-        input:focus { border-color: var(--accent); }
+        .reg-box { width: 100%; max-width: 400px; background: var(--card); padding: 25px; border-radius: 20px; border: 1px solid #334155; text-align: center; margin-bottom: 30px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 10px; box-sizing: border-box; }
         
-        .main-btn { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .main-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4); }
+        .main-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
 
         /* Список профилей */
         #userList { width: 100%; max-width: 450px; }
-        .user-card { background: var(--card); margin-bottom: 15px; padding: 15px; border-radius: 16px; border: 1px solid #334155; display: flex; align-items: center; gap: 15px; animation: fadeIn 0.5s ease forwards; }
+        .user-card { background: var(--card); margin-bottom: 15px; padding: 15px; border-radius: 16px; border: 1px solid #334155; display: flex; align-items: center; gap: 15px; transition: 0.3s; }
         
-        .avatar { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent); background: #0f172a; }
+        .avatar { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent); }
         .info { flex-grow: 1; }
-        .info b { color: var(--accent); font-size: 16px; display: block; margin-bottom: 5px; }
+        .info b { color: var(--accent); font-size: 16px; display: block; }
         
         /* Кнопки рейтинга */
-        .rating-box { display: flex; gap: 10px; }
-        .vote-btn { background: #0f172a; border: 1px solid #334155; color: white; padding: 6px 12px; border-radius: 10px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px; transition: 0.2s; position: relative; }
-        
-        /* Анимации кнопок */
-        .btn-up:active { animation: jump 0.4s ease; color: var(--up); border-color: var(--up); }
-        .btn-down:active { animation: shake 0.4s ease; color: var(--down); border-color: var(--down); }
-
-        @keyframes jump { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
-
-        /* Всплывающие эмодзи */
-        .floating-emoji { position: fixed; pointer-events: none; animation: floatUp 0.8s ease-out forwards; font-size: 24px; z-index: 1000; }
-        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-80px) scale(1.5); } }
+        .rating-box { display: flex; gap: 8px; }
+        .vote-btn { background: #0f172a; border: 1px solid #334155; color: white; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 5px; transition: 0.2s; }
+        .vote-btn:hover { background: #334155; }
+        .btn-up:hover { border-color: var(--up); color: var(--up); }
+        .btn-down:hover { border-color: var(--down); color: var(--down); }
 
         .hidden { display: none; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
     <div id="authPanel" class="reg-box">
-        <h2 style="margin-top:0">Cloud Stars</h2>
-        <p style="color:#94a3b8; font-size:14px">Войдите, чтобы голосовать за других</p>
+        <h3>Регистрация / Вход</h3>
         <input type="text" id="uName" placeholder="Никнейм (для новых)">
         <input type="email" id="uEmail" placeholder="Ваш Email">
-        <button class="main-btn" id="goBtn">ВОЙТИ / СОЗДАТЬ</button>
+        <button class="main-btn" id="goBtn">ВОЙТИ В ОБЛАКО</button>
     </div>
 
     <div id="myProfile" class="reg-box hidden">
-        <div style="display:flex; align-items:center; justify-content: center; gap:15px">
-            <img id="myAv" src="" style="width:50px; border-radius:50%">
-            <h4 id="helloText" style="margin:0"></h4>
-        </div>
-        <button onclick="localStorage.clear(); location.reload();" style="margin-top:15px; background:none; border:1px solid #444; color:#94a3b8; padding:5px 12px; border-radius:8px; cursor:pointer; font-size:12px">Выйти</button>
+        <h4 id="helloText"></h4>
+        <button onclick="localStorage.clear(); location.reload();" style="background:none; border:1px solid #444; color:#94a3b8; padding:5px 10px; border-radius:8px; cursor:pointer;">Выйти</button>
     </div>
 
-    <h3 style="color: #94a3b8; margin-bottom: 20px;">Рейтинг участников:</h3>
+    <h3 style="color: #94a3b8;">Рейтинг участников:</h3>
     <div id="userList"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
         import { 
-            getFirestore, collection, doc, setDoc, getDoc, updateDoc, increment, query, onSnapshot, orderBy, serverTimestamp 
+            getFirestore, collection, doc, setDoc, getDoc, updateDoc, increment, query, onSnapshot, orderBy 
         } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -81,29 +66,21 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // ФУНКЦИЯ ГОЛОСОВАНИЯ С ЭФФЕКТАМИ
-        window.handleVote = async (userId, type, event) => {
-            // Визуал: вылетающий эмодзи
-            const emoji = document.createElement('div');
-            emoji.innerText = type === 'likes' ? '👍' : '👎';
-            emoji.className = 'floating-emoji';
-            emoji.style.left = event.clientX + 'px';
-            emoji.style.top = event.clientY + 'px';
-            document.body.appendChild(emoji);
-            setTimeout(() => emoji.remove(), 800);
-
-            // Обновление в базе
+        // ФУНКЦИЯ ГОЛОСОВАНИЯ
+        window.handleVote = async (userId, type) => {
             const userRef = doc(db, "users", userId);
             try {
-                await updateDoc(userRef, { [type]: increment(1) });
-            } catch (e) { console.error(e); }
+                await updateDoc(userRef, {
+                    [type]: increment(1)
+                });
+            } catch (e) { console.error("Ошибка голосования:", e); }
         };
 
-        // ВХОД / РЕГИСТРАЦИЯ
+        // ЛОГИКА ВХОДА / РЕГИСТРАЦИИ
         document.getElementById('goBtn').onclick = async () => {
-            const email = document.getElementById('uEmail').value.trim().toLowerCase();
+            const email = document.getElementById('uEmail').value.trim();
             const name = document.getElementById('uName').value.trim();
-            if (!email) return alert("Введите Email!");
+            if (!email) return alert("Email обязателен!");
 
             const docId = email.replace(/\./g, '_');
             const userRef = doc(db, "users", docId);
@@ -112,10 +89,10 @@
             if (userSnap.exists()) {
                 localStorage.setItem('cloudUser', JSON.stringify(userSnap.data()));
             } else {
-                if (!name) return alert("Вы новый пользователь! Введите никнейм.");
-                const newUser = { name, email, likes: 0, dislikes: 0, timestamp: serverTimestamp() };
+                if (!name) return alert("Вы новый пользователь, введите Никнейм!");
+                const newUser = { name, email, likes: 0, dislikes: 0, joined: new Date().toISOString() };
                 await setDoc(userRef, newUser);
-                localStorage.setItem('cloudUser', JSON.stringify({ name, email }));
+                localStorage.setItem('cloudUser', JSON.stringify(newUser));
             }
             location.reload();
         };
@@ -125,13 +102,11 @@
         if (saved) {
             document.getElementById('authPanel').classList.add('hidden');
             document.getElementById('myProfile').classList.remove('hidden');
-            document.getElementById('helloText').innerText = saved.name;
-            document.getElementById('myAv').src = `https://api.dicebear.com/7.x/bottts/svg?seed=${saved.name}`;
+            document.getElementById('helloText').innerText = `Вы зашли как: ${saved.name}`;
         }
 
-        // ЖИВОЙ СПИСОК ИЗ FIREBASE
-        const q = query(collection(db, "users"), orderBy("timestamp", "desc"));
-        onSnapshot(q, (snap) => {
+        // ЖИВОЙ ВЫВОД НИКНЕЙМОВ И РЕЙТИНГА
+        onSnapshot(query(collection(db, "users"), orderBy("joined", "desc")), (snap) => {
             const list = document.getElementById('userList');
             list.innerHTML = "";
             snap.forEach(d => {
@@ -145,10 +120,10 @@
                         <div class="info">
                             <b>${u.name}</b>
                             <div class="rating-box">
-                                <button class="vote-btn btn-up" onclick="handleVote('${uid}', 'likes', event)">
+                                <button class="vote-btn btn-up" onclick="handleVote('${uid}', 'likes')">
                                     👍 ${u.likes || 0}
                                 </button>
-                                <button class="vote-btn btn-down" onclick="handleVote('${uid}', 'dislikes', event)">
+                                <button class="vote-btn btn-down" onclick="handleVote('${uid}', 'dislikes')">
                                     👎 ${u.dislikes || 0}
                                 </button>
                             </div>
