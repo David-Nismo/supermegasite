@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S.M.S V3.5</title>
+    <title>S.M.S</title>
     <style>
         :root { 
             --bg: #0d1117; --card: #161b22; --border: #30363d; 
@@ -27,10 +27,8 @@
         .is-me { align-self: flex-end; border-color: #238636; background: #23863611; }
         
         .author { font-size: 13px; font-weight: bold; color: var(--accent); cursor: pointer; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
-        .author:hover { text-decoration: underline; }
         .lvl-tag { font-size: 10px; background: #30363d; padding: 2px 5px; border-radius: 4px; color: #f1c40f; }
         .del-btn { color: var(--admin-color); font-size: 11px; cursor: pointer; margin-left: auto; opacity: 0.6; }
-        .del-btn:hover { opacity: 1; }
 
         /* Профиль */
         #profile-section { display: none; padding: 20px; overflow-y: auto; height: 100%; }
@@ -43,28 +41,32 @@
         .xp-bar { height: 12px; background: #111; border-radius: 6px; overflow: hidden; border: 1px solid #333; }
         .xp-fill { height: 100%; background: linear-gradient(90deg, #58a6ff, #bc8cf2); width: 0%; transition: 1.5s ease-out; }
 
+        /* Выбор аватара */
+        #avatar-picker { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; scrollbar-width: thin; }
+        .av-option { width: 60px; height: 60px; cursor: pointer; border-radius: 8px; border: 2px solid transparent; transition: 0.2s; }
+        .av-option:hover { transform: scale(1.1); }
+        .av-active { border-color: var(--accent) !important; background: rgba(88, 166, 255, 0.2); }
+
         /* Ввод */
         .input-box { background: var(--card); border-top: 1px solid var(--border); padding: 15px; }
         .emoji-bar { margin-bottom: 10px; display: flex; gap: 12px; font-size: 22px; }
         .emoji-bar span { cursor: pointer; transition: 0.2s; }
-        .emoji-bar span:hover { transform: scale(1.3); }
         .input-row { display: flex; gap: 10px; }
         #msgInput { flex-grow: 1; background: #010409; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; outline: none; }
-        .send-btn { background: #238636; border: none; color: white; padding: 0 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .send-btn { background: #238636; border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
-        #admin-section { display: none; padding: 20px; }
         .hidden { display: none !important; }
-        input[type="text"], textarea { background: #0d1117; border: 1px solid var(--border); color: white; padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-top: 5px; }
+        input[type="text"], textarea { background: #0d1117; border: 1px solid var(--border); color: white; padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-top: 5px; outline: none; }
     </style>
 </head>
 <body>
 
     <div id="auth" style="position:fixed; inset:0; background:var(--bg); z-index:100; display:flex; align-items:center; justify-content:center;">
         <div style="background:var(--card); padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center; width:300px;">
-            <h2 style="margin-top:0;">Cloud OS v12</h2>
+            <h2 style="margin-top:0;">Group Chat</h2>
             <input type="text" id="nick" placeholder="Ваш ник" style="margin-bottom:10px;">
             <input type="text" id="mail" placeholder="Ваш Email" style="margin-bottom:20px;">
-            <button onclick="login()" class="send-btn" style="width:100%; height:45px;">ВОЙТИ</button>
+            <button onclick="login()" class="send-btn" style="width:100%;">ВОЙТИ</button>
         </div>
     </div>
 
@@ -82,7 +84,7 @@
                     <span onclick="addE('👍')">👍</span><span onclick="addE('😎')">😎</span><span onclick="addE('💀')">💀</span>
                 </div>
                 <div class="input-row">
-                    <input type="text" id="msgInput" placeholder="Напишите что-нибудь..." onkeypress="if(event.key==='Enter') send()">
+                    <input type="text" id="msgInput" placeholder="Напишите..." onkeypress="if(event.key==='Enter') send()">
                     <button onclick="send()" class="send-btn">ОТПРАВИТЬ</button>
                 </div>
             </div>
@@ -92,9 +94,9 @@
             <div class="profile-card">
                 <div class="profile-banner" id="p-banner"></div>
                 <div class="profile-main">
-                    <img id="p-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=1" class="profile-avatar">
+                    <img id="p-avatar" src="" class="profile-avatar">
                     <h1 id="p-name" style="margin: 10px 0 5px 0;">Загрузка...</h1>
-                    <p id="p-bio" style="margin:0; color:#8b949e; font-style: italic;">Био не заполнено</p>
+                    <p id="p-bio" style="margin:0; color:#8b949e;">Био не заполнено</p>
                     
                     <div class="xp-container">
                         <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-weight:bold;">
@@ -105,22 +107,24 @@
                     </div>
 
                     <div id="edit-controls">
-                        <h4 style="margin-bottom:5px; color:var(--accent);">Настройки профиля</h4>
+                        <h4 style="margin:15px 0 5px 0; color:var(--accent);">Выбор аватара</h4>
+                        <div id="avatar-picker"></div>
+                        <input type="hidden" id="selected-avatar-url">
+
+                        <h4 style="margin:15px 0 5px 0; color:var(--accent);">Настройки</h4>
                         <textarea id="edit-bio-input" placeholder="Расскажите о себе..."></textarea>
-                        <input type="text" id="edit-banner-input" placeholder="Ссылка на фон баннера (URL)">
-                        <button onclick="saveProfile()" class="send-btn" style="margin-top:15px; width:100%;">СОХРАНИТЬ ИЗМЕНЕНИЯ</button>
+                        <input type="text" id="edit-banner-input" placeholder="URL фона баннера (ссылка)">
+                        <button onclick="saveProfile()" class="send-btn" style="margin-top:15px; width:100%; background:#238636;">СОХРАНИТЬ ИЗМЕНЕНИЯ</button>
                     </div>
-                    <button id="back-to-my" class="hidden" onclick="loadProfileData(currentUser.id)" style="margin-top:10px; background:#444; border:none; color:white; padding:8px; border-radius:5px; width:100%;">Вернуться к себе</button>
+                    <button id="back-to-my" class="hidden" onclick="loadProfileData(currentUser.id)" style="margin-top:10px; background:#444; border:none; color:white; padding:10px; border-radius:5px; width:100%; cursor:pointer;">Вернуться к себе</button>
                 </div>
             </div>
         </section>
 
-        <section id="admin-section">
+        <section id="admin-section" style="display:none; padding:20px;">
             <h2 style="color:var(--admin-color);">Админ-панель</h2>
             <div style="background:var(--card); padding:20px; border-radius:10px; border:1px solid var(--admin-color);">
-                <p>Добро пожаловать, создатель.</p>
-                <p>Статус: <b>Полный доступ</b></p>
-                <button onclick="alert('Всего сообщений: ' + document.querySelectorAll('.msg').length)" class="send-btn" style="background:#444">Статистика</button>
+                <p>Вы вошли как создатель.</p>
             </div>
         </section>
     </div>
@@ -143,15 +147,14 @@
         const ADMIN_EMAIL = "240130@turan-edu.kz";
         let currentUser = JSON.parse(localStorage.getItem('cloudUser'));
 
-        // Авторизация
         window.login = async () => {
             const n = document.getElementById('nick').value, e = document.getElementById('mail').value.trim();
-            if(!n || !e) return alert("Введите данные!");
+            if(!n || !e) return alert("Заполни поля!");
             const id = e.replace(/\./g, '_');
             
             const userRef = doc(db, "users", id);
             const userSnap = await getDoc(userRef);
-            let userData = userSnap.exists() ? userSnap.data() : { name: n, email: e, xp: 0, level: 1, bio: "Новый пользователь", banner: "" };
+            let userData = userSnap.exists() ? userSnap.data() : { name: n, email: e, xp: 0, level: 1, bio: "Новичок", banner: "", avatar: "" };
             
             await setDoc(userRef, userData, { merge: true });
             localStorage.setItem('cloudUser', JSON.stringify({id, ...userData}));
@@ -162,15 +165,13 @@
             document.getElementById('auth').classList.add('hidden');
             if(currentUser.email === ADMIN_EMAIL) {
                 const adminBtn = document.createElement('div');
-                adminBtn.className = 'nav-btn';
-                adminBtn.style.color = 'var(--admin-color)';
-                adminBtn.innerText = 'АДМИН';
+                adminBtn.className = 'nav-btn'; adminBtn.style.color = 'var(--admin-color)'; adminBtn.innerText = 'АДМИН';
                 adminBtn.onclick = () => switchTab('admin');
                 document.getElementById('main-nav').appendChild(adminBtn);
             }
+            renderAvatarPicker();
         }
 
-        // Навигация
         window.switchTab = (tab) => {
             document.querySelectorAll('section').forEach(s => s.style.display = 'none');
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -179,51 +180,71 @@
             document.getElementById('btn-' + tab)?.classList.add('active');
         };
 
-        // Загрузка профиля
         async function loadProfileData(uid) {
             const snap = await getDoc(doc(db, "users", uid));
             if(!snap.exists()) return;
             const d = snap.data();
-            document.getElementById('p-name').innerText = d.name;
-            document.getElementById('p-bio').innerText = d.bio;
-            document.getElementById('p-lvl').innerText = d.level;
-            document.getElementById('p-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${d.name}`;
-            document.getElementById('p-banner').style.backgroundImage = d.banner ? `url(${d.banner})` : '';
             
-            let nextXp = d.level * 150;
-            document.getElementById('p-xp-text').innerText = `${d.xp} / ${nextXp} XP`;
-            document.getElementById('xp-fill').style.width = (d.xp / nextXp * 100) + "%";
+            const lvl = d.level || 1;
+            const xp = d.xp || 0;
+            const nextXp = lvl * 150;
+
+            document.getElementById('p-name').innerText = d.name || "Аноним";
+            document.getElementById('p-bio').innerText = d.bio || "Био не заполнено";
+            document.getElementById('p-lvl').innerText = lvl;
+            document.getElementById('p-avatar').src = d.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${d.name}`;
+            document.getElementById('p-banner').style.backgroundImage = d.banner ? `url(${d.banner})` : '';
+            document.getElementById('p-xp-text').innerText = `${xp} / ${nextXp} XP`;
+            document.getElementById('xp-fill').style.width = (xp / nextXp * 100) + "%";
 
             const isOwn = uid === currentUser.id;
             document.getElementById('edit-controls').className = isOwn ? "" : "hidden";
             document.getElementById('back-to-my').className = isOwn ? "hidden" : "send-btn";
         }
 
+        function renderAvatarPicker() {
+            const picker = document.getElementById('avatar-picker');
+            const styles = ['avataaars', 'bottts', 'pixel-art'];
+            picker.innerHTML = "";
+            styles.forEach(s => {
+                for(let i=0; i<3; i++) {
+                    const url = `https://api.dicebear.com/7.x/${s}/svg?seed=${s}${i}${currentUser.id}`;
+                    const img = document.createElement('img');
+                    img.src = url; img.className = "av-option";
+                    img.onclick = () => {
+                        document.querySelectorAll('.av-option').forEach(el => el.classList.remove('av-active'));
+                        img.classList.add('av-active');
+                        document.getElementById('selected-avatar-url').value = url;
+                    };
+                    picker.appendChild(img);
+                }
+            });
+        }
+
         window.saveProfile = async () => {
             const bio = document.getElementById('edit-bio-input').value;
             const bnr = document.getElementById('edit-banner-input').value;
-            await updateDoc(doc(db, "users", currentUser.id), { bio, banner: bnr });
+            const avat = document.getElementById('selected-avatar-url').value;
+            const updateData = { bio, banner: bnr };
+            if(avat) updateData.avatar = avat;
+            await updateDoc(doc(db, "users", currentUser.id), updateData);
             alert("Сохранено!");
             loadProfileData(currentUser.id);
         };
 
-        // Чат и Опыт
         window.send = async () => {
             const txt = msgInput.value.trim();
             if(!txt || !currentUser) return;
             msgInput.value = "";
-
             await addDoc(collection(db, "messages"), {
                 uid: currentUser.id, name: currentUser.name, text: txt,
-                time: serverTimestamp(), reactions: { "🔥": 0 }
+                time: serverTimestamp()
             });
-
-            // Качаем уровень
             const uRef = doc(db, "users", currentUser.id);
             const uSnap = await getDoc(uRef);
-            let { xp, level } = uSnap.data();
+            let { xp = 0, level = 1 } = uSnap.data();
             xp += 10;
-            if(xp >= level * 150) { xp = 0; level++; }
+            if(xp >= level * 150) { xp = 0; level++; alert("НОВЫЙ УРОВЕНЬ!"); }
             await updateDoc(uRef, { xp, level });
         };
 
@@ -231,19 +252,17 @@
             if(confirm("Удалить?")) await deleteDoc(doc(db, "messages", id));
         };
 
-        // Слушатель сообщений
         onSnapshot(query(collection(db, "messages"), orderBy("time", "asc"), limit(50)), (snap) => {
             const chatDiv = document.getElementById('chat');
             chatDiv.innerHTML = "";
             snap.forEach(d => {
                 const m = d.data(); if(!m.time) return;
                 const isMe = m.uid === currentUser.id;
-                const isAdmin = currentUser.email === ADMIN_EMAIL;
                 chatDiv.innerHTML += `
                     <div class="msg ${isMe ? 'is-me' : ''}">
                         <div class="author" onclick="viewUser('${m.uid}')">
-                            ${m.name} <span class="lvl-tag">ID: ${m.uid.slice(0,4)}</span>
-                            ${isAdmin ? `<span class="del-btn" onclick="event.stopPropagation(); deleteMsg('${d.id}')">УДАЛИТЬ</span>` : ''}
+                            ${m.name}
+                            ${(currentUser.email === ADMIN_EMAIL) ? `<span class="del-btn" onclick="event.stopPropagation(); deleteMsg('${d.id}')"> [X]</span>` : ''}
                         </div>
                         <div class="text">${m.text}</div>
                     </div>
