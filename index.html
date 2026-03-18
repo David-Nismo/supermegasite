@@ -3,57 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <title>Super Mega Site</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root { --bg: #0a0a0c; --card: #16161a; --primary: #3d5afe; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #e2e8f0; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { width: 100%; max-width: 480px; background: var(--card); padding: 30px; border-radius: 24px; border: 1px solid #2d2d33; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-        input { width: 100%; padding: 14px; margin: 10px 0; background: #1f1f23; border: 1px solid #333; color: white; border-radius: 12px; outline: none; transition: 0.3s; }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(61, 90, 254, 0.2); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { width: 100%; max-width: 450px; background: #1e293b; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #334155; }
         
-        #mainBtn { 
-            background: var(--primary); color: white; border: none; padding: 16px; 
-            border-radius: 12px; width: 100%; font-weight: 700; cursor: pointer; 
-            margin-top: 15px; letter-spacing: 1px; transition: 0.4s;
-        }
-        #mainBtn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(61, 90, 254, 0.4); }
+        /* Индикатор онлайна */
+        .status { font-size: 12px; color: #10b981; display: flex; align-items: center; margin-bottom: 10px; }
+        .pulse { width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 8px; animation: pulse-animation 2s infinite; }
+        @keyframes pulse-animation { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
 
-        /* ФУНКЦИЯ 1: Динамические стили "Тепловой карты" */
-        .post { 
-            margin-top: 20px; padding: 20px; border-radius: 20px; 
-            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-            position: relative; border: 1px solid #2d2d33;
-        }
+        input { width: 100%; padding: 12px; margin: 8px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 10px; box-sizing: border-box; }
+        button#mainBtn { background: #3b82f6; color: white; border: none; padding: 14px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        button#mainBtn:hover { background: #2563eb; transform: scale(1.02); }
+
+        .post { background: #1e293b; border: 1px solid #334155; padding: 20px; margin-top: 15px; border-radius: 15px; width: 100%; max-width: 450px; position: relative; transition: 0.3s; }
+        .post:hover { border-color: #3b82f6; }
         
-        /* Состояния в зависимости от лайков */
-        .level-low { background: #16161a; }
-        .level-mid { background: #1e1b4b; border-color: #4338ca; box-shadow: 0 0 20px rgba(67, 56, 202, 0.2); }
-        .level-high { 
-            background: linear-gradient(135deg, #312e81 0%, #4c1d95 100%); 
-            border-color: #a78bfa; 
-            animation: glow 2s infinite alternate;
-        }
-
-        @keyframes glow { from { box-shadow: 0 0 10px rgba(167, 139, 250, 0.2); } to { box-shadow: 0 0 30px rgba(167, 139, 250, 0.5); } }
-
-        .like-btn { 
-            background: rgba(255,255,255,0.1); border: none; color: white; 
-            padding: 10px 20px; border-radius: 30px; cursor: pointer; 
-            font-weight: 600; margin-top: 10px; transition: 0.2s;
-        }
-        .like-btn:active { transform: scale(0.9); }
-        .time { font-size: 11px; opacity: 0.5; float: right; }
+        .like-btn { cursor: pointer; border: none; background: #334155; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; transition: 0.2s; margin-top: 10px; }
+        .like-btn:hover { background: #475569; }
+        .time { font-size: 11px; color: #64748b; float: right; }
+        b { color: #3b82f6; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2 style="text-align: center; margin-bottom: 25px;">⚡️ Cloud Pulse</h2>
-        <input type="text" id="name" placeholder="Твой псевдоним">
-        <input type="email" id="email" placeholder="Email для связи">
-        <button id="mainBtn">ЗАПУСТИТЬ В ОБЛАКО</button>
+        <div class="status"><div class="pulse"></div> Облако активно (Live)</div>
+        <h3>Новая запись</h3>
+        <input type="text" id="name" placeholder="Твой ник">
+        <input type="email" id="email" placeholder="Твой Email">
+        <button id="mainBtn">ОТПРАВИТЬ</button>
     </div>
 
-    <div id="feed" style="width: 100%; max-width: 480px;"></div>
+    <div id="feed" style="width: 100%; max-width: 450px;"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -74,30 +57,23 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // ФУНКЦИЯ 2: Аудио-синтезатор (Звуковой отклик)
-        const playPulseSound = (freq) => {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.5);
-        };
-
+        // ФУНКЦИЯ 1: Обработка лайка + Конфетти
         window.processLike = async (id, currentLikes) => {
-            playPulseSound(200 + (currentLikes * 10)); // Звук становится выше с ростом лайков
             const docRef = doc(db, "requests", id);
-            await updateDoc(docRef, { likes: increment(1) });
+            try {
+                // Если после этого клика будет 5, 10, 15... лайков — бабах!
+                if ((currentLikes + 1) % 5 === 0) {
+                    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                }
+                await updateDoc(docRef, { likes: increment(1) });
+            } catch (e) { console.error(e); }
         };
 
+        // Запись данных
         document.getElementById('mainBtn').onclick = async () => {
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
-            if(!name || !email) return alert("Заполни поля!");
+            if(!name || !email) return;
 
             await addDoc(collection(db, "requests"), {
                 name, email, likes: 0, timestamp: serverTimestamp()
@@ -105,6 +81,7 @@
             document.getElementById('email').value = "";
         };
 
+        // ФУНКЦИЯ 2: Real-time поток (с эффектом появления)
         const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
         onSnapshot(q, (snapshot) => {
             const feed = document.getElementById('feed');
@@ -112,20 +89,12 @@
             snapshot.forEach((doc) => {
                 const data = doc.data();
                 const l = data.likes || 0;
-                
-                // Определение "температуры" поста
-                let heatClass = 'level-low';
-                if(l > 5) heatClass = 'level-mid';
-                if(l > 15) heatClass = 'level-high';
-
                 feed.innerHTML += `
-                    <div class="post ${heatClass}">
-                        <span class="time">${data.timestamp?.toDate().toLocaleTimeString() || "..." }</span>
-                        <b style="color: #60a5fa">${data.name}</b>
-                        <p style="margin: 8px 0; font-size: 14px; opacity: 0.8;">${data.email}</p>
-                        <button class="like-btn" onclick="processLike('${doc.id}', ${l})">
-                            ❤ ${l}
-                        </button>
+                    <div class="post">
+                        <span class="time">${data.timestamp?.toDate().toLocaleTimeString() || "секунду..."}</span>
+                        <b>@${data.name}</b>
+                        <p style="margin: 5px 0; color: #94a3b8;">${data.email}</p>
+                        <button class="like-btn" onclick="processLike('${doc.id}', ${l})">🔥 ${l}</button>
                     </div>
                 `;
             });
