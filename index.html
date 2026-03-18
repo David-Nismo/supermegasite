@@ -6,83 +6,78 @@
     <title>Super Mega Site</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root { --accent: #6366f1; --bg: #0b0f1a; --card: #161b22; --admin: #f59e0b; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        :root { --accent: #6366f1; --bg: #0b0f1a; --card: #161b22; --admin: #f59e0b; --danger: #f85149; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* Боковая панель (Профили) */
-        .sidebar { width: 350px; background: var(--card); border-right: 1px solid #30363d; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; }
+        /* Sidebar */
+        .sidebar { width: 320px; background: var(--card); border-right: 1px solid #30363d; display: flex; flex-direction: column; padding: 15px; overflow-y: auto; }
+        .user-card { background: #0d1117; padding: 12px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #30363d; }
+        .is-admin-card { border-color: var(--admin); background: #1c1910; }
         
-        /* Основная область (Чат) */
+        /* Chat */
         .chat-area { flex-grow: 1; display: flex; flex-direction: column; background: #0d1117; }
-        #chatMessages { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        
-        /* Сообщения */
-        .msg { max-width: 80%; padding: 10px 15px; border-radius: 15px; background: #21262d; position: relative; animation: fadeIn 0.3s; }
+        #chatMessages { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { max-width: 70%; padding: 10px 14px; border-radius: 12px; background: #21262d; position: relative; font-size: 14px; }
         .msg.is-me { align-self: flex-end; background: var(--accent); }
-        .msg b { display: block; font-size: 12px; margin-bottom: 4px; opacity: 0.8; }
-        .msg img.sticker { width: 100px; display: block; margin-top: 5px; }
-        .msg .delete-btn { position: absolute; top: 5px; right: 5px; cursor: pointer; display: none; background: rgba(0,0,0,0.5); border-radius: 50%; width: 18px; height: 18px; font-size: 10px; text-align: center; }
-        .msg:hover .delete-btn { display: block; }
+        .msg b { font-size: 11px; opacity: 0.7; display: block; }
+        .del-msg { color: var(--danger); cursor: pointer; position: absolute; top: 5px; right: 8px; font-weight: bold; font-size: 16px; }
 
-        /* Панель ввода */
-        .input-panel { padding: 20px; background: var(--card); border-top: 1px solid #30363d; }
-        .controls { display: flex; gap: 10px; margin-bottom: 10px; }
+        /* Input */
+        .input-panel { padding: 15px; background: var(--card); border-top: 1px solid #30363d; }
         .input-row { display: flex; gap: 10px; }
-        input#msgInput { flex-grow: 1; background: #0d1117; border: 1px solid #30363d; color: white; padding: 12px; border-radius: 10px; }
+        input { flex-grow: 1; background: #0d1117; border: 1px solid #30363d; color: white; padding: 10px; border-radius: 8px; outline: none; }
+        .btn { padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-primary { background: var(--accent); color: white; }
         
-        /* Админка */
-        .user-card { background: #21262d; padding: 10px; border-radius: 12px; margin-bottom: 10px; font-size: 13px; border: 1px solid transparent; }
-        .user-card.is-admin { border-color: var(--admin); }
-        .admin-actions { margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap; }
-        .adm-btn { font-size: 10px; padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer; background: #30363d; color: white; }
-        .adm-btn.danger { background: #f85149; }
-
-        .badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-right: 5px; }
-        .bg-admin { background: var(--admin); color: black; }
+        .adm-btn { font-size: 9px; padding: 3px 6px; margin: 2px; border-radius: 4px; background: #30363d; color: #fff; border: none; cursor: pointer; }
+        .adm-btn:hover { background: #484f58; }
+        .badge { font-size: 9px; padding: 2px 5px; border-radius: 4px; font-weight: bold; text-transform: uppercase; }
+        
         .hidden { display: none !important; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .muted-text { color: var(--danger); font-size: 12px; margin-top: 5px; text-align: center; }
     </style>
 </head>
 <body>
 
     <div id="authOverlay" style="position:fixed; inset:0; background:var(--bg); z-index:100; display:flex; align-items:center; justify-content:center;">
-        <div style="background:var(--card); padding:40px; border-radius:24px; text-align:center; width:300px;">
-            <h3>Cloud OS Login</h3>
-            <input type="text" id="uName" placeholder="Никнейм" style="width:100%; margin-bottom:10px; padding:10px; border-radius:8px; background:#000; border:1px solid #334155; color:white;">
-            <input type="email" id="uEmail" placeholder="Email" style="width:100%; margin-bottom:20px; padding:10px; border-radius:8px; background:#000; border:1px solid #334155; color:white;">
-            <button onclick="login()" style="width:100%; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer;">Войти в систему</button>
+        <div style="background:var(--card); padding:30px; border-radius:20px; width:280px; border: 1px solid #30363d; text-align:center;">
+            <h3>Cloud OS</h3>
+            <input type="text" id="uName" placeholder="Никнейм" style="width:100%; margin-bottom:10px;">
+            <input type="email" id="uEmail" placeholder="Ваша почта" style="width:100%; margin-bottom:15px;">
+            <button onclick="login()" class="btn btn-primary" style="width:100%">Войти</button>
         </div>
     </div>
 
     <div class="sidebar">
-        <h4>Жители (Админ-панель)</h4>
+        <h4>👥 Участники</h4>
         <div id="userList"></div>
-        <hr style="width:100%; border:0; border-top:1px solid #30363d; margin: 20px 0;">
-        <button onclick="localStorage.clear(); location.reload();" style="background:none; border:1px solid #f85149; color:#f85149; cursor:pointer; padding:10px; border-radius:8px;">Выйти</button>
+        <button onclick="localStorage.clear(); location.reload();" style="margin-top:auto; background:none; color:var(--danger); border:1px solid var(--danger); padding:8px; border-radius:8px; cursor:pointer;">Выйти</button>
     </div>
 
     <div class="chat-area">
         <div id="chatMessages"></div>
-        
-        <div class="input-panel">
-            <div class="controls">
+        <div class="input-panel" id="inputBox">
+            <div style="margin-bottom:10px; display:flex; gap:5px;">
                 <button onclick="sendMedia('😎')" class="adm-btn">😎</button>
-                <button onclick="sendMedia('🔥')" class="adm-btn">🔥</button>
-                <button onclick="sendMedia('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueGZ3bmZ6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKMGpxS7SPO6Fsk/giphy.gif', true)" class="adm-btn">GIF Dance</button>
-                <button onclick="sendMedia('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHRueGZ3bmZ6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/26vUu9bH3S8Y2vG8w/giphy.gif', true)" class="adm-btn">GIF Wow</button>
+                <button onclick="sendMedia('🚀')" class="adm-btn">🚀</button>
+                <button onclick="sendMedia('https://media.tenor.com/v8S7yO_S_pUAAAAM/dance-party.gif', true)" class="adm-btn">GIF Dance</button>
             </div>
             <div class="input-row">
-                <input type="text" id="msgInput" placeholder="Напишите сообщение..." onkeypress="if(event.key==='Enter') sendMsg()">
-                <button onclick="sendMsg()" class="main-btn" style="padding: 0 20px; background:var(--accent); border:none; border-radius:10px; color:white; cursor:pointer;">Отправить</button>
+                <input type="text" id="msgInput" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter') sendMsg()">
+                <button onclick="sendMsg()" class="btn btn-primary" id="sendBtn">Отправить</button>
             </div>
+            <div id="muteAlert" class="muted-text hidden">Вы не можете писать (МУТ)</div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
         import { 
-            getFirestore, collection, doc, setDoc, getDoc, updateDoc, increment, query, onSnapshot, orderBy, limit, addDoc, deleteDoc, serverTimestamp 
+            getFirestore, collection, doc, setDoc, getDoc, updateDoc, query, onSnapshot, orderBy, limit, addDoc, deleteDoc, serverTimestamp 
         } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+        // --- НАСТРОЙКА АДМИНА ---
+        const SUPER_ADMIN_EMAIL = "240130@turan-edu.kz"; // ВПИШИ СЮДА СВОЙ EMAIL
 
         const firebaseConfig = {
             apiKey: "AIzaSyDIuPsxUWVwJ1rVl1ytjVUHA84L4nQlwrM",
@@ -95,103 +90,83 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        
         let currentUser = JSON.parse(localStorage.getItem('cloudUser'));
-        let adminId = "";
+        const isAdmin = currentUser && currentUser.email === SUPER_ADMIN_EMAIL;
 
-        // --- ЛОГИКА ВХОДА ---
         window.login = async () => {
             const name = document.getElementById('uName').value;
-            const email = document.getElementById('uEmail').value;
-            if(!name || !email) return;
+            const email = document.getElementById('uEmail').value.trim();
+            if(!name || !email) return alert("Заполни поля!");
+
             const id = email.replace(/\./g, '_');
             const userRef = doc(db, "users", id);
             const snap = await getDoc(userRef);
+
+            let userData = snap.exists() ? snap.data() : { name, email, joined: Date.now(), banned: false, muted: false, warns: 0, kicked: false };
+            if(!snap.exists()) await setDoc(userRef, userData);
             
-            let data = snap.exists() ? snap.data() : { name, email, joined: Date.now(), banned: false };
-            if(!snap.exists()) await setDoc(userRef, data);
+            if(userData.banned) return alert("Вы забанены!");
             
-            if(data.banned) return alert("Вы забанены!");
-            
-            localStorage.setItem('cloudUser', JSON.stringify({id, ...data}));
+            localStorage.setItem('cloudUser', JSON.stringify({id, ...userData}));
             location.reload();
         };
 
         if(currentUser) document.getElementById('authOverlay').classList.add('hidden');
 
-        // --- ЛОГИКА ЧАТА ---
+        // Чат
         window.sendMsg = async () => {
-            const text = document.getElementById('msgInput').value;
-            if(!text.trim()) return;
+            const input = document.getElementById('msgInput');
+            if(!input.value.trim()) return;
             await addDoc(collection(db, "messages"), {
-                uid: currentUser.id,
-                name: currentUser.name,
-                text: text,
-                type: 'text',
-                time: serverTimestamp()
+                uid: currentUser.id, name: currentUser.name, text: input.value, type: 'text', time: serverTimestamp()
             });
-            document.getElementById('msgInput').value = "";
+            input.value = "";
         };
 
         window.sendMedia = async (content, isGif = false) => {
             await addDoc(collection(db, "messages"), {
-                uid: currentUser.id,
-                name: currentUser.name,
-                text: content,
-                type: isGif ? 'gif' : 'emoji',
-                time: serverTimestamp()
+                uid: currentUser.id, name: currentUser.name, text: content, type: isGif ? 'gif' : 'emoji', time: serverTimestamp()
             });
         };
 
-        // Слушаем сообщения
-        onSnapshot(query(collection(db, "messages"), orderBy("time", "asc"), limit(50)), (snap) => {
-            const chat = document.getElementById('chatMessages');
-            chat.innerHTML = "";
-            snap.forEach(d => {
-                const m = d.data();
-                const isMe = currentUser && m.uid === currentUser.id;
-                const isAdmin = currentUser && currentUser.id === adminId;
-                
-                let content = m.type === 'gif' ? `<img src="${m.text}" class="sticker">` : m.text;
-                
-                chat.innerHTML += `
-                    <div class="msg ${isMe ? 'is-me' : ''}">
-                        <b>${m.name}</b>
-                        ${content}
-                        ${isAdmin ? `<div class="delete-btn" onclick="deleteMsg('${d.id}')">×</div>` : ''}
-                    </div>
-                `;
-            });
-            chat.scrollTop = chat.scrollHeight;
-        });
+        window.delMsg = async (id) => { if(isAdmin) await deleteDoc(doc(db, "messages", id)); };
 
-        // --- ЛОГИКА АДМИНКИ ---
-        window.deleteMsg = async (id) => await deleteDoc(doc(db, "messages", id));
-        window.banUser = async (id, status) => await updateDoc(doc(db, "users", id), { banned: status });
-        window.setVIP = async (id, status) => await updateDoc(doc(db, "users", id), { isVIP: status });
+        // Админ-действия
+        window.admAction = async (uid, action) => {
+            if(!isAdmin) return;
+            const userRef = doc(db, "users", uid);
+            const snap = await getDoc(userRef);
+            const data = snap.data();
 
+            if(action === 'warn') {
+                let w = (data.warns || 0) + 1;
+                await updateDoc(userRef, { warns: w, banned: w >= 3 });
+                alert(`Варн выдан (${w}/3)`);
+            }
+            if(action === 'mute') await updateDoc(userRef, { muted: !data.muted });
+            if(action === 'kick') await updateDoc(userRef, { kicked: true });
+            if(action === 'ban') await updateDoc(userRef, { banned: true });
+        };
+
+        // Живой список пользователей
         onSnapshot(query(collection(db, "users"), orderBy("joined", "asc")), (snap) => {
-            adminId = snap.docs[0].id; // Самый первый - админ
             const list = document.getElementById('userList');
             list.innerHTML = "";
-            
             snap.forEach(d => {
                 const u = d.data();
                 const uid = d.id;
-                const isThisAdmin = uid === adminId;
-                const amIAdmin = currentUser && currentUser.id === adminId;
+                const isUserAdmin = u.email === SUPER_ADMIN_EMAIL;
 
                 list.innerHTML += `
-                    <div class="user-card ${isThisAdmin ? 'is-admin' : ''}">
-                        ${isThisAdmin ? '<span class="badge bg-admin">Admin</span>' : ''}
-                        ${u.isVIP ? '<span class="badge" style="background:magenta">VIP</span>' : ''}
-                        <b>${u.name}</b>
-                        ${u.banned ? '<span style="color:red"> [BANNED]</span>' : ''}
-                        
-                        ${amIAdmin && !isThisAdmin ? `
-                            <div class="admin-actions">
-                                <button class="adm-btn" onclick="setVIP('${uid}', ${!u.isVIP})">VIP</button>
-                                <button class="adm-btn danger" onclick="banUser('${uid}', ${!u.banned})">${u.banned ? 'Unban' : 'Ban'}</button>
+                    <div class="user-card ${isUserAdmin ? 'is-admin-card' : ''}">
+                        <span class="badge" style="background:${isUserAdmin ? 'gold' : '#444'}">${isUserAdmin ? 'Main Admin' : 'User'}</span>
+                        <b>${u.name}</b> <small>(${u.warns || 0}⚠️)</small>
+                        ${isAdmin && !isUserAdmin ? `
+                            <div style="margin-top:5px">
+                                <button class="adm-btn" onclick="admAction('${uid}', 'warn')">WARN</button>
+                                <button class="adm-btn" onclick="admAction('${uid}', 'mute')">${u.muted ? 'UNMUTE' : 'MUTE'}</button>
+                                <button class="adm-btn" onclick="admAction('${uid}', 'kick')">KICK</button>
+                                <button class="adm-btn" style="color:red" onclick="admAction('${uid}', 'ban')">BAN</button>
                             </div>
                         ` : ''}
                     </div>
@@ -199,14 +174,38 @@
             });
         });
 
-        // Проверка бана в реальном времени
+        // Живой чат
+        onSnapshot(query(collection(db, "messages"), orderBy("time", "asc"), limit(50)), (snap) => {
+            const chat = document.getElementById('chatMessages');
+            chat.innerHTML = "";
+            snap.forEach(d => {
+                const m = d.data();
+                const isMe = currentUser && m.uid === currentUser.id;
+                const content = m.type === 'gif' ? `<img src="${m.text}" style="width:100%; border-radius:8px">` : m.text;
+                chat.innerHTML += `
+                    <div class="msg ${isMe ? 'is-me' : ''}">
+                        ${isAdmin ? `<span class="del-msg" onclick="delMsg('${d.id}')">×</span>` : ''}
+                        <b>${m.name}</b> ${content}
+                    </div>
+                `;
+            });
+            chat.scrollTop = chat.scrollHeight;
+        });
+
+        // Контроль состояния (Мут/Кик)
         if(currentUser) {
             onSnapshot(doc(db, "users", currentUser.id), (d) => {
-                if(d.exists() && d.data().banned) {
+                const data = d.data();
+                if(!data) return;
+                if(data.banned || data.kicked) {
                     localStorage.clear();
-                    alert("Вас забанили!");
+                    alert("Ваш доступ ограничен!");
                     location.reload();
                 }
+                const isMuted = data.muted;
+                document.getElementById('msgInput').disabled = isMuted;
+                document.getElementById('sendBtn').classList.toggle('hidden', isMuted);
+                document.getElementById('muteAlert').classList.toggle('hidden', !isMuted);
             });
         }
     </script>
