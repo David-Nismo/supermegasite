@@ -3,72 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud OS v12: Ultra</title>
+    <title>S.M.S V3</title>
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --accent: #58a6ff; }
-        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); color: #c9d1d9; font-family: -apple-system, sans-serif; overflow: hidden; }
+        :root { 
+            --bg: #0d1117; --card: #161b22; --border: #30363d; 
+            --accent: #58a6ff; --steam-blue: #1b2838; --discord-blurple: #5865f2;
+        }
+        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); color: #c9d1d9; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
 
-        /* Сетка приложения */
-        .app { display: flex; height: 100vh; max-width: 900px; margin: 0 auto; background: var(--bg); border-left: 1px solid var(--border); border-right: 1px solid var(--border); flex-direction: column; }
+        /* Навигация */
+        .navbar { display: flex; background: #010409; border-bottom: 1px solid var(--border); padding: 10px; justify-content: center; gap: 20px; }
+        .nav-btn { cursor: pointer; padding: 8px 15px; border-radius: 6px; transition: 0.3s; }
+        .nav-btn:hover { background: var(--card); }
+        .nav-btn.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
 
-        /* Сообщения */
+        .app { display: flex; height: calc(100vh - 50px); max-width: 1000px; margin: 0 auto; background: var(--bg); border-left: 1px solid var(--border); border-right: 1px solid var(--border); flex-direction: column; }
+
+        /* Чат */
+        #chat-section { display: flex; flex-direction: column; height: 100%; }
         #chat { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .msg { background: var(--card); border: 1px solid var(--border); padding: 12px; border-radius: 12px; max-width: 80%; position: relative; align-self: flex-start; }
+        .msg { background: var(--card); border: 1px solid var(--border); padding: 12px; border-radius: 12px; max-width: 80%; align-self: flex-start; }
         .is-me { align-self: flex-end; border-color: #238636; background: #23863611; }
+        .author { font-size: 13px; font-weight: bold; color: var(--accent); cursor: pointer; display: flex; gap: 8px; align-items: center; }
+        .lvl-badge { font-size: 10px; background: #30363d; padding: 2px 6px; border-radius: 4px; color: gold; }
 
-        .author { font-size: 12px; font-weight: bold; color: var(--accent); margin-bottom: 5px; }
-        .text { font-size: 15px; line-height: 1.5; white-space: pre-wrap; }
-        .media { max-width: 100%; border-radius: 8px; margin-top: 10px; display: block; border: 1px solid var(--border); }
+        /* Профиль (Style Steam/Discord) */
+        #profile-section { display: none; padding: 30px; overflow-y: auto; height: 100%; }
+        .profile-card { background: var(--steam-blue); border-radius: 15px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .profile-banner { height: 150px; background: var(--discord-blurple); position: relative; }
+        .profile-info { padding: 20px; position: relative; display: flex; flex-direction: column; gap: 15px; }
+        .profile-avatar { width: 100px; height: 100px; border-radius: 50%; border: 5px solid var(--card); margin-top: -70px; background: #333; z-index: 1; }
+        .xp-bar { height: 10px; background: #222; border-radius: 5px; overflow: hidden; margin-top: 10px; }
+        .xp-fill { height: 100%; background: linear-gradient(90deg, #58a6ff, #bc8cf2); width: 0%; transition: 1s; }
+        
+        .edit-input { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 5px; margin-top: 5px; }
 
-        /* Реакции */
-        .reacts { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-        .re-btn { background: #30363d; border: none; border-radius: 20px; padding: 3px 10px; color: white; cursor: pointer; font-size: 12px; transition: 0.2s; }
-        .re-btn:hover { background: #444; transform: scale(1.1); }
-
-        /* Панель ввода */
-        .input-box { background: var(--card); border-top: 1px solid var(--border); padding: 15px; }
-        .tools { display: flex; gap: 15px; margin-bottom: 10px; font-size: 20px; }
-        .tools span { cursor: pointer; filter: grayscale(1); transition: 0.2s; }
-        .tools span:hover { filter: grayscale(0); transform: scale(1.2); }
-
-        .input-row { display: flex; gap: 10px; }
-        #msgInput { flex-grow: 1; background: #010409; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; outline: none; }
-        .send { background: #238636; border: none; color: white; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-
-        #auth { position: fixed; inset: 0; background: var(--bg); z-index: 100; display: flex; align-items: center; justify-content: center; }
         .hidden { display: none !important; }
+        button { cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="auth">
         <div style="background:var(--card); padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center;">
-            <h2>Cloud OS</h2>
-            <input type="text" id="nick" placeholder="Ник" style="width:100%; padding:10px; margin-bottom:10px; background:#0d1117; color:white; border:1px solid var(--border);">
-            <input type="email" id="mail" placeholder="Email" style="width:100%; padding:10px; margin-bottom:20px; background:#0d1117; color:white; border:1px solid var(--border);">
-            <button onclick="login()" class="send" style="width:100%; height:40px;">Войти</button>
+            <h2>Cloud OS Login</h2>
+            <input type="text" id="nick" placeholder="Ваш ник" class="edit-input" style="margin-bottom:10px;">
+            <input type="email" id="mail" placeholder="Email (для ID)" class="edit-input" style="margin-bottom:20px;">
+            <button onclick="login()" style="width:100%; padding: 10px; background: #238636; color:white; border:none; border-radius:8px;">Войти</button>
         </div>
     </div>
 
+    <nav class="navbar" id="main-nav">
+        <div class="nav-btn active" onclick="switchTab('chat')">Чат</div>
+        <div class="nav-btn" onclick="switchTab('profile')">Мой Профиль</div>
+    </nav>
+
     <div class="app">
-        <div id="chat"></div>
-        <div class="input-box">
-            <div class="tools">
-                <span onclick="addE('😂')">😂</span><span onclick="addE('🔥')">🔥</span><span onclick="addE('❤️')">❤️</span>
-                <span onclick="document.getElementById('f').click()">📎</span>
+        <div id="chat-section">
+            <div id="chat"></div>
+            <div class="input-box" style="background: var(--card); padding: 15px; border-top: 1px solid var(--border);">
+                <div class="tools" style="margin-bottom:10px; display:flex; gap:10px; font-size:20px;">
+                    <span onclick="addE('😂')">😂</span><span onclick="addE('🔥')">🔥</span><span onclick="addE('😎')">😎</span>
+                </div>
+                <div class="input-row" style="display:flex; gap:10px;">
+                    <input type="text" id="msgInput" placeholder="Введите сообщение..." style="flex-grow:1; background:#010409; border:1px solid var(--border); color:white; padding:12px; border-radius:8px;" onkeypress="if(event.key==='Enter') send()">
+                    <button onclick="send()" style="background:#238636; color:white; border:none; padding:0 20px; border-radius:8px;">SEND</button>
+                </div>
             </div>
-            <div class="input-row">
-                <input type="file" id="f" class="hidden" onchange="upFile(this)">
-                <input type="text" id="msgInput" placeholder="Сообщение или GIF ссылка..." onkeypress="if(event.key==='Enter') send()">
-                <button onclick="send()" class="send">ОТПРАВИТЬ</button>
+        </div>
+
+        <div id="profile-section">
+            <div class="profile-card">
+                <div class="profile-banner" id="p-banner"></div>
+                <div class="profile-info">
+                    <img id="p-avatar" src="https://via.placeholder.com/100" class="profile-avatar">
+                    <h2 id="p-name" style="margin:0;">Nickname</h2>
+                    <p id="p-bio" style="color:#8b949e; margin:0;">Пользователь S.M.S</p>
+                    
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <span>Уровень <b id="p-lvl">1</b></span>
+                            <span id="p-xp-text">0 / 100 XP</span>
+                        </div>
+                        <div class="xp-bar"><div id="xp-fill" class="xp-fill"></div></div>
+                    </div>
+
+                    <div id="profile-edit-tools">
+                        <h3>Настройка профиля</h3>
+                        <input type="text" id="edit-bio" placeholder="О себе..." class="edit-input">
+                        <input type="text" id="edit-banner" placeholder="URL фона баннера..." class="edit-input">
+                        <button onclick="saveProfile()" style="margin-top:10px; background:var(--accent); border:none; color:white; padding:8px 15px; border-radius:5px;">Сохранить</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, collection, doc, updateDoc, query, onSnapshot, orderBy, limit, addDoc, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, query, onSnapshot, orderBy, limit, addDoc, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDIuPsxUWVwJ1rVl1ytjVUHA84L4nQlwrM",
@@ -81,70 +114,121 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const st = getStorage(app);
-        let user = JSON.parse(localStorage.getItem('cloudUser'));
+        let currentUser = JSON.parse(localStorage.getItem('cloudUser'));
 
+        // Вход и создание профиля
         window.login = async () => {
             const n = nick.value, e = mail.value.trim();
-            if(!n || !e) return;
+            if(!n || !e) return alert("Заполни поля!");
             const id = e.replace(/\./g, '_');
-            await setDoc(doc(db, "users", id), { name: n, email: e }, { merge: true });
-            localStorage.setItem('cloudUser', JSON.stringify({id, name: n, email: e}));
+            
+            const userRef = doc(db, "users", id);
+            const userSnap = await getDoc(userRef);
+            
+            let userData = { 
+                id, name: n, bio: "Новичок Cloud OS", 
+                xp: 0, level: 1, banner: "" 
+            };
+
+            if (!userSnap.exists()) {
+                await setDoc(userRef, userData);
+            } else {
+                userData = userSnap.data();
+                userData.id = id;
+            }
+
+            localStorage.setItem('cloudUser', JSON.stringify(userData));
             location.reload();
         };
 
-        if(user) auth.classList.add('hidden');
+        if(currentUser) {
+            auth.classList.add('hidden');
+            loadProfileData(currentUser.id);
+        }
 
+        // Переключение вкладок
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('chat-section').style.display = tab === 'chat' ? 'flex' : 'none';
+            document.getElementById('profile-section').style.display = tab === 'profile' ? 'block' : 'none';
+            event.target.classList.add('active');
+            if(tab === 'profile') loadProfileData(currentUser.id);
+        };
+
+        // Загрузка данных профиля (своего или чужого)
+        async function loadProfileData(uid) {
+            const snap = await getDoc(doc(db, "users", uid));
+            if(snap.exists()) {
+                const d = snap.data();
+                p_name.innerText = d.name;
+                p_bio.innerText = d.bio || "";
+                p_lvl.innerText = d.level || 1;
+                let nextLvlXp = d.level * 150;
+                p_xp_text.innerText = `${d.xp} / ${nextLvlXp} XP`;
+                xp_fill.style.width = (d.xp / nextLvlXp * 100) + "%";
+                p_banner.style.background = d.banner ? `url(${d.banner}) center/cover` : 'var(--discord-blurple)';
+                
+                // Скрываем инструменты редактирования, если смотрим чужой профиль
+                profile_edit_tools.className = (uid === currentUser.id) ? "" : "hidden";
+            }
+        }
+
+        window.saveProfile = async () => {
+            const newBio = document.getElementById('edit-bio').value;
+            const newBanner = document.getElementById('edit-banner').value;
+            const userRef = doc(db, "users", currentUser.id);
+            await updateDoc(userRef, { bio: newBio, banner: newBanner });
+            alert("Профиль обновлен!");
+            loadProfileData(currentUser.id);
+        };
+
+        // Логика чата с опытом
         window.send = async () => {
             const txt = msgInput.value.trim();
-            if(!txt || !user) return;
+            if(!txt || !currentUser) return;
             msgInput.value = "";
-            let type = (txt.includes("giphy.com") || txt.endsWith(".gif")) ? "gif" : "text";
+
+            // Добавляем сообщение
             await addDoc(collection(db, "messages"), {
-                uid: user.id, name: user.name, text: txt, type: type,
+                uid: currentUser.id, name: currentUser.name, text: txt,
                 reactions: { "😂": 0, "🔥": 0, "❤️": 0 }, time: serverTimestamp()
             });
+
+            // Начисляем XP (10 за сообщение)
+            const userRef = doc(db, "users", currentUser.id);
+            const userSnap = await getDoc(userRef);
+            let { xp, level } = userSnap.data();
+            xp += 10;
+            if(xp >= level * 150) {
+                xp = 0;
+                level++;
+                alert(`Уровень повышен! Теперь вы ${level} уровня!`);
+            }
+            await updateDoc(userRef, { xp, level });
         };
 
-        window.upFile = async (el) => {
-            const file = el.files[0]; if(!file) return;
-            const r = ref(st, `chats/${Date.now()}_${file.name}`);
-            const s = await uploadBytes(r, file);
-            const url = await getDownloadURL(s.ref);
-            await addDoc(collection(db, "messages"), {
-                uid: user.id, name: user.name, text: file.name, fileUrl: url,
-                type: file.type.includes("image") ? "img" : "file",
-                reactions: { "😂": 0, "🔥": 0, "❤️": 0 }, time: serverTimestamp()
-            });
-        };
-
-        window.react = async (id, em) => {
-            await updateDoc(doc(db, "messages", id), { [`reactions.${em}`]: increment(1) });
-        };
-
+        // Рендер сообщений
         onSnapshot(query(collection(db, "messages"), orderBy("time", "asc"), limit(40)), (snap) => {
             chat.innerHTML = "";
             snap.forEach(d => {
                 const m = d.data(); if(!m.time) return;
-                const isMe = user && m.uid === user.id;
-                let body = `<div class="text">${m.text}</div>`;
-                if(m.type === "img" || m.type === "gif") body = `<img src="${m.fileUrl || m.text}" class="media">`;
-                if(m.type === "file") body = `<a href="${m.fileUrl}" target="_blank" style="color:cyan">📁 ${m.text}</a>`;
-
+                const isMe = currentUser && m.uid === currentUser.id;
                 chat.innerHTML += `
                     <div class="msg ${isMe ? 'is-me' : ''}">
-                        <div class="author">${m.name}</div>
-                        ${body}
-                        <div class="reacts">
-                            ${Object.entries(m.reactions || {}).map(([e, c]) => `
-                                <button class="re-btn" onclick="react('${d.id}', '${e}')">${e} ${c}</button>
-                            `).join('')}
+                        <div class="author" onclick="viewOtherProfile('${m.uid}')">
+                            ${m.name} <span class="lvl-badge">ID: ${m.uid.substring(0,4)}</span>
                         </div>
+                        <div class="text">${m.text}</div>
                     </div>
                 `;
             });
             chat.scrollTop = chat.scrollHeight;
         });
+
+        window.viewOtherProfile = (uid) => {
+            switchTab('profile');
+            loadProfileData(uid);
+        };
 
         window.addE = (e) => msgInput.value += e;
     </script>
