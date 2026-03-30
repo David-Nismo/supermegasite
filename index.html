@@ -1,109 +1,137 @@
-<section id="feed-section">
-    <div id="feed"></div>
-    
-    <div class="input-box">
-        <div style="display:flex; gap:10px; margin-bottom:10px;">
-            <select id="adType" style="background:#010409; color:white; border:1px solid var(--border); border-radius:6px; padding:5px;">
-                <option value="rent_out">Сдам в аренду</option>
-                <option value="rent_in">Ищу аренду</option>
-            </select>
-            <input type="text" id="carModel" placeholder="Марка/Модель">
-            <input type="text" id="carPrice" placeholder="Цена (тг/сутки)">
-        </div>
-        <input type="text" id="carImg" placeholder="Ссылка на фото (URL)" style="margin-bottom:10px;">
-        <textarea id="carDesc" placeholder="Условия аренды (залог, стаж, район)..."></textarea>
-        <button onclick="postAd()" class="post-btn" style="margin-top:10px;">РАЗМЕСТИТЬ ОБЪЯВЛЕНИЕ</button>
-    </div>
-</section>
-
-<div id="response-modal" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:200; display:flex; align-items:center; justify-content:center;">
-    <div style="background:var(--card); padding:20px; border-radius:12px; width:90%; max-width:400px;">
-        <h3>Откликнуться на объявление</h3>
-        <textarea id="resMsg" placeholder="Ваше сообщение владельцу..."></textarea>
-        <button onclick="sendResponse()" class="post-btn" style="margin-top:10px;">ОТПРАВИТЬ</button>
-        <button onclick="closeModal()" style="background:none; border:none; color:grey; width:100%; margin-top:10px; cursor:pointer;">Отмена</button>
-    </div>
-</div>
-
-<script type="module">
-    // ... (код инициализации Firebase оставляем прежним)
-    import { getFirestore, collection, doc, setDoc, getDoc, query, onSnapshot, orderBy, addDoc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-
-    let selectedAdId = null;
-
-    // Публикация
-    window.postAd = async () => {
-        const type = document.getElementById('adType').value;
-        const model = document.getElementById('carModel').value;
-        const price = document.getElementById('carPrice').value;
-        const img = document.getElementById('carImg').value || 'https://via.placeholder.com/400x200?text=JDM+Rent';
-        const desc = document.getElementById('carDesc').value;
-
-        if(!model || !price) return alert("Заполните основные поля!");
-
-        await addDoc(collection(db, "ads"), {
-            uid: currentUser.id, seller: currentUser.name,
-            type, model, price, img, desc, time: serverTimestamp()
-        });
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .wrapper { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 10px; border: 1px solid #ccc; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
         
-        // Очистка
-        document.querySelectorAll('.input-box input, .input-box textarea').forEach(i => i.value = "");
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.9 } });
-    };
+        #login-form { display: flex; flex-direction: column; gap: 10px; border: 1px solid #ccc; padding: 10px; border-radius: 8px; width: 100%; max-width: 400px; }
+        #login-form input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        #login-form button { padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        
+        .auth-info { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+        #logout-btn { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
 
-    // Отрисовка ленты
-    onSnapshot(query(collection(db, "ads"), orderBy("time", "desc")), (snap) => {
-        const feed = document.getElementById('feed');
-        feed.innerHTML = "";
-        snap.forEach(d => {
-            const ad = d.data();
-            const isOwner = ad.uid === currentUser.id;
-            feed.innerHTML += `
-                <div class="car-card" style="border-left: 4px solid ${ad.type === 'rent_out' ? '#238636' : '#58a6ff'}">
-                    <img src="${ad.img}" class="car-img">
-                    <div class="car-info">
-                        <span style="font-size:10px; color:${ad.type === 'rent_out' ? '#238636' : '#58a6ff'}">
-                            ${ad.type === 'rent_out' ? 'СДАЮ' : 'ИЩУ'}
-                        </span>
-                        <p class="car-title">${ad.model}</p>
-                        <p class="car-price">${ad.price}</p>
-                        <p class="car-desc">${ad.desc}</p>
-                        <div class="car-seller">
-                            <span>Автор: ${ad.seller}</span>
-                            ${isOwner ? 
-                                `<span style="color:red; cursor:pointer" onclick="deleteAd('${d.id}')">Удалить</span>` : 
-                                `<button onclick="openResponse('${d.id}')" style="background:var(--accent); border:none; color:white; border-radius:4px; padding:2px 8px; cursor:pointer">Откликнуться</button>`
-                            }
-                        </div>
-                    </div>
-                </div>
-            `;
+    <div id="auth-info" class="auth-info" style="display: none;">
+        <img id="user-photo" src="" alt="User Photo" width="40" style="border-radius: 50%;">
+        <span id="user-name"></span>
+        <button id="logout-btn">Выйти</button>
+    </div>
+
+    <form id="login-form">
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <button type="submit">Войти / Зарегистрироваться</button>
+    </form>
+
+    <div id="main-program" style="display: none; width: 100%; max-width: 600px;">
+        <div class="wrapper">
+            <input type="text" id="request-input" placeholder="Введите ваш запрос">
+            <button id="send-request-btn">Отправить запрос</button>
+        </div>
+        <div id="requests-container"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAs-PId_aRzAt8L8xS8fGqA4w6p83-4R2I",
+            authDomain: "study-6839b.firebaseapp.com",
+            projectId: "study-6839b",
+            storageBucket: "study-6839b.appspot.com",
+            messagingSenderId: "374221655387",
+            appId: "1:374221655387:web:e3f640263f3a8dfc8f0e20",
+            measurementId: "G-9K5X68NW3D"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const loginForm = document.getElementById('login-form');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const mainProgram = document.getElementById('main-program');
+        const authInfo = document.getElementById('auth-info');
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                loginForm.style.display = 'none';
+                authInfo.style.display = 'flex';
+                mainProgram.style.display = 'block';
+                document.getElementById('user-name').textContent = user.email;
+                loadRequests();
+            } else {
+                loginForm.style.display = 'flex';
+                authInfo.style.display = 'none';
+                mainProgram.style.display = 'none';
+            }
         });
-    });
 
-    // Работа с откликами
-    window.openResponse = (id) => {
-        selectedAdId = id;
-        document.getElementById('response-modal').classList.remove('hidden');
-    };
-
-    window.closeModal = () => document.getElementById('response-modal').classList.add('hidden');
-
-    window.sendResponse = async () => {
-        const msg = document.getElementById('resMsg').value;
-        if(!msg) return alert("Введите сообщение!");
-
-        await addDoc(collection(db, "responses"), {
-            adId: selectedAdId,
-            fromUid: currentUser.id,
-            fromName: currentUser.name,
-            message: msg,
-            time: serverTimestamp()
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                try {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                } catch (err) {
+                    alert("Ошибка: " + err.message);
+                }
+            }
         });
 
-        alert("Ваш отклик отправлен владельцу!");
-        closeModal();
-    };
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth);
+        });
 
-    window.deleteAd = async (id) => { if(confirm("Удалить?")) await deleteDoc(doc(db, "ads", id)); };
-</script>
+        async function loadRequests() {
+            const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
+            onSnapshot(q, (snapshot) => {
+                const container = document.getElementById('requests-container');
+                container.innerHTML = '';
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const div = document.createElement('div');
+                    div.className = 'wrapper';
+                    div.innerHTML = `
+                        <div>${data.text}</div>
+                        <button onclick="likeRequest('${doc.id}')">❤️ ${data.likes || 0}</button>
+                    `;
+                    container.appendChild(div);
+                });
+            });
+        }
+
+        window.likeRequest = async (id) => {
+            const docRef = doc(db, "requests", id);
+            await updateDoc(docRef, {
+                likes: increment(1)
+            });
+        };
+
+        document.getElementById('send-request-btn').addEventListener('click', async () => {
+            const input = document.getElementById('request-input');
+            if (input.value.trim() !== "") {
+                await addDoc(collection(db, "requests"), {
+                    text: input.value,
+                    timestamp: serverTimestamp(),
+                    likes: 0
+                });
+                input.value = "";
+            }
+        });
+    </script>
+</body>
+</html>
