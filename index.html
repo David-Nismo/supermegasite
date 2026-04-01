@@ -3,17 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud Private Chat</title>
+    <title>Private Cloud Chat</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; }
         .hidden { display: none !important; }
         
+        /* Авторизация */
         #login-block { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 320px; margin-top: 80px; text-align: center; }
         #login-block input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
         #login-block button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
+        #login-block button:hover { background: #0056b3; }
 
+        /* Основной интерфейс */
         .main-container { display: flex; width: 100%; max-width: 1000px; height: 90vh; background: white; margin-top: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden; }
         
+        /* Список пользователей */
         .sidebar { width: 300px; border-right: 1px solid #eee; display: flex; flex-direction: column; background: #fff; }
         .sidebar-header { padding: 20px; background: #f8f9fa; border-bottom: 1px solid #eee; font-weight: bold; font-size: 18px; }
         #users-container { flex: 1; overflow-y: auto; }
@@ -22,29 +26,33 @@
         .user-item.active { background: #e7f3ff; border-left: 4px solid #007bff; }
         .user-avatar { width: 35px; height: 35px; background: #007bff; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; text-transform: uppercase; }
 
+        /* Окно чата */
         .chat-window { flex: 1; display: flex; flex-direction: column; background: #fff; }
-        .chat-header { padding: 15px 25px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header { padding: 15px 25px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; }
         .messages-box { flex: 1; padding: 20px; overflow-y: auto; background: #f4f7f6; display: flex; flex-direction: column; gap: 12px; }
         
+        /* Пузыри сообщений */
         .msg { max-width: 65%; padding: 10px 15px; border-radius: 18px; font-size: 14px; position: relative; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .msg-time { font-size: 10px; margin-top: 4px; opacity: 0.6; text-align: right; display: block; }
         .sent { align-self: flex-end; background: #007bff; color: white; border-bottom-right-radius: 4px; }
         .received { align-self: flex-start; background: white; color: #333; border-bottom-left-radius: 4px; }
 
+        /* Поле ввода */
         .input-area { padding: 20px; display: flex; gap: 10px; border-top: 1px solid #eee; background: #fff; }
-        .input-area input { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; outline: none; }
-        .input-area button { background: #007bff; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 18px; }
+        .input-area input { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; outline: none; font-size: 14px; }
+        .input-area button { background: #007bff; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .input-area button:hover { transform: scale(1.05); background: #0056b3; }
 
-        #logout-btn { background: #ff4d4d; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+        #logout-btn { background: #ff4d4d; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body>
 
     <div id="login-block">
         <h2 style="margin-bottom: 20px;">Welcome</h2>
-        <input type="text" id="username" placeholder="Ваше имя (Никнейм)">
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Пароль">
+        <input type="text" id="username" placeholder="Ваше имя (Никнейм)" autocomplete="off">
+        <input type="email" id="email" placeholder="Email" autocomplete="username">
+        <input type="password" id="password" placeholder="Пароль" autocomplete="current-password">
         <button id="auth-btn">Войти / Регистрация</button>
     </div>
 
@@ -92,11 +100,13 @@
         document.getElementById('auth-btn').onclick = async () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
-            const name = document.getElementById('username').value;
+            let name = document.getElementById('username').value;
+
+            // Если браузер подставил почту в имя, чистим это
+            if (name.includes('@')) name = name.split('@')[0];
 
             try {
                 const res = await signInWithEmailAndPassword(auth, email, pass);
-                // Если пользователь зашел и ввел новое имя — обновляем его
                 if(name) await setDoc(doc(db, "chat_users", res.user.uid), { username: name }, { merge: true });
             } catch {
                 try {
@@ -110,7 +120,10 @@
             }
         };
 
-        document.getElementById('logout-btn').onclick = () => signOut(auth);
+        document.getElementById('logout-btn').onclick = () => {
+            recipientId = null;
+            signOut(auth);
+        };
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -119,20 +132,23 @@
                 document.getElementById('chat-block').classList.remove('hidden');
                 loadUsers();
             } else {
+                currentUser = null;
                 document.getElementById('login-block').classList.remove('hidden');
                 document.getElementById('chat-block').classList.add('hidden');
             }
         });
 
         function loadUsers() {
+            if (!currentUser) return;
+
             onSnapshot(collection(db, "chat_users"), (snap) => {
                 const container = document.getElementById('users-container');
                 container.innerHTML = '';
                 snap.forEach(uDoc => {
                     const u = uDoc.data();
                     
-                    // ФИЛЬТР: Не показываем текущего пользователя (себя)
-                    if (u.uid !== currentUser.uid) {
+                    // ЖЕСТКИЙ ФИЛЬТР: если UID записи совпадает с твоим UID, не показываем
+                    if (u.uid && currentUser.uid && u.uid !== currentUser.uid) {
                         const div = document.createElement('div');
                         div.className = 'user-item';
                         const displayName = u.username || u.email;
@@ -181,12 +197,14 @@
             const input = document.getElementById('msg-input');
             if (input.value.trim() && recipientId) {
                 const roomId = [currentUser.uid, recipientId].sort().join('_');
-                await addDoc(collection(db, "private_chats", roomId, "messages"), {
-                    text: input.value,
-                    senderId: currentUser.uid,
-                    timestamp: serverTimestamp()
-                });
-                input.value = '';
+                try {
+                    await addDoc(collection(db, "private_chats", roomId, "messages"), {
+                        text: input.value,
+                        senderId: currentUser.uid,
+                        timestamp: serverTimestamp()
+                    });
+                    input.value = '';
+                } catch(e) { console.error(e); }
             }
         };
     </script>
