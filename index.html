@@ -1,137 +1,172 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Private Cloud Chat</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .wrapper { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 10px; border: 1px solid #ccc; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        .hidden { display: none !important; }
         
-        #login-form { display: flex; flex-direction: column; gap: 10px; border: 1px solid #ccc; padding: 10px; border-radius: 8px; width: 100%; max-width: 400px; }
-        #login-form input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        #login-form button { padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        /* Авторизация */
+        #login-block { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 320px; margin-top: 50px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+        /* Интерфейс */
+        .main-wrapper { display: flex; gap: 20px; width: 100%; max-width: 900px; height: 80vh; margin-top: 20px; }
+        .user-list { width: 250px; background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-y: auto; }
+        .user-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; border-radius: 8px; transition: 0.2s; font-size: 14px; }
+        .user-item:hover { background: #e7f3ff; }
+        .user-item.active { background: #007bff; color: white; }
+
+        .chat-area { flex: 1; background: white; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
+        .chat-header { padding: 15px; border-bottom: 1px solid #eee; font-weight: bold; background: #fff; display: flex; justify-content: space-between; align-items: center; }
+        .messages-box { flex: 1; padding: 20px; overflow-y: auto; background: #f9f9f9; display: flex; flex-direction: column; gap: 10px; }
         
-        .auth-info { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-        #logout-btn { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .msg { max-width: 70%; padding: 10px 14px; border-radius: 15px; font-size: 14px; }
+        .sent { align-self: flex-end; background: #007bff; color: white; border-bottom-right-radius: 2px; }
+        .received { align-self: flex-start; background: #e4e6eb; color: #000; border-bottom-left-radius: 2px; }
+
+        .input-area { padding: 15px; display: flex; gap: 10px; border-top: 1px solid #eee; }
+        .logout-btn { background: #ff4d4d; width: auto; font-size: 12px; padding: 5px 10px; }
     </style>
 </head>
 <body>
 
-    <div id="auth-info" class="auth-info" style="display: none;">
-        <img id="user-photo" src="" alt="User Photo" width="40" style="border-radius: 50%;">
-        <span id="user-name"></span>
-        <button id="logout-btn">Выйти</button>
+    <div id="login-block">
+        <h3 style="margin-top:0">Вход в систему</h3>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Пароль">
+        <button id="auth-btn">Войти / Регистрация</button>
     </div>
 
-    <form id="login-form">
-        <input type="email" id="email" placeholder="Email" required>
-        <input type="password" id="password" placeholder="Password" required>
-        <button type="submit">Войти / Зарегистрироваться</button>
-    </form>
-
-    <div id="main-program" style="display: none; width: 100%; max-width: 600px;">
-        <div class="wrapper">
-            <input type="text" id="request-input" placeholder="Введите ваш запрос">
-            <button id="send-request-btn">Отправить запрос</button>
+    <div id="chat-block" class="main-wrapper hidden">
+        <div class="user-list">
+            <h4 style="margin-top:0">Собеседники</h4>
+            <div id="users-container"></div>
         </div>
-        <div id="requests-container"></div>
+
+        <div class="chat-area">
+            <div class="chat-header">
+                <span id="chat-with">Выберите, кому написать</span>
+                <button class="logout-btn" id="logout-btn">Выйти</button>
+            </div>
+            <div class="messages-box" id="messages-box"></div>
+            <div class="input-area">
+                <input type="text" id="msg-input" placeholder="Введите сообщение...">
+                <button id="send-btn">➤</button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
-  apiKey: "AIzaSyDIuPsxUWVwJ1rVl1ytjVUHA84L4nQlwrM",
-  authDomain: "supermegasite-6c1a9.firebaseapp.com",
-  projectId: "supermegasite-6c1a9",
-  storageBucket: "supermegasite-6c1a9.firebasestorage.app",
-  messagingSenderId: "301398062192",
-  appId: "1:301398062192:web:39b01badba333fe1e7b0b5",
-  measurementId: "G-XG9537KF24"
-};
+            apiKey: "AIzaSyDIuPsxUWVwJ1rVl1ytjVUHA84L4nQlwrM",
+            authDomain: "supermegasite-6c1a9.firebaseapp.com",
+            projectId: "supermegasite-6c1a9",
+            storageBucket: "supermegasite-6c1a9.firebasestorage.app",
+            messagingSenderId: "301398062192",
+            appId: "1:301398062192:web:39b01badba333fe1e7b0b5"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        const loginForm = document.getElementById('login-form');
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const mainProgram = document.getElementById('main-program');
-        const authInfo = document.getElementById('auth-info');
+        let currentUser = null;
+        let recipientId = null;
+        let unsubMessages = null;
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                loginForm.style.display = 'none';
-                authInfo.style.display = 'flex';
-                mainProgram.style.display = 'block';
-                document.getElementById('user-name').textContent = user.email;
-                loadRequests();
-            } else {
-                loginForm.style.display = 'flex';
-                authInfo.style.display = 'none';
-                mainProgram.style.display = 'none';
-            }
-        });
-
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = emailInput.value;
-            const password = passwordInput.value;
+        // Авторизация
+        document.getElementById('auth-btn').onclick = async () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
             try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch {
                 try {
-                    await createUserWithEmailAndPassword(auth, email, password);
-                } catch (err) {
-                    alert("Ошибка: " + err.message);
-                }
+                    await createUserWithEmailAndPassword(auth, email, pass);
+                } catch (e) { alert(e.message); }
+            }
+        };
+
+        document.getElementById('logout-btn').onclick = () => signOut(auth);
+
+        // Слушатель состояния
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('login-block').classList.add('hidden');
+                document.getElementById('chat-block').classList.remove('hidden');
+                
+                // Добавляем тебя в список активных пользователей проекта
+                await setDoc(doc(db, "users", user.uid), { email: user.email, uid: user.uid }, { merge: true });
+                loadUsers();
+            } else {
+                document.getElementById('login-block').classList.remove('hidden');
+                document.getElementById('chat-block').classList.add('hidden');
             }
         });
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth);
-        });
-
-        async function loadRequests() {
-            const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
-            onSnapshot(q, (snapshot) => {
-                const container = document.getElementById('requests-container');
+        // Загрузка списка (только те, кто зашел в этот проект)
+        function loadUsers() {
+            onSnapshot(collection(db, "users"), (snap) => {
+                const container = document.getElementById('users-container');
                 container.innerHTML = '';
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const div = document.createElement('div');
-                    div.className = 'wrapper';
-                    div.innerHTML = `
-                        <div>${data.text}</div>
-                        <button onclick="likeRequest('${doc.id}')">❤️ ${data.likes || 0}</button>
-                    `;
-                    container.appendChild(div);
+                snap.forEach(uDoc => {
+                    const u = uDoc.data();
+                    if (u.uid !== currentUser.uid) {
+                        const div = document.createElement('div');
+                        div.className = 'user-item';
+                        div.innerText = u.email;
+                        div.onclick = () => startChat(u.uid, u.email);
+                        container.appendChild(div);
+                    }
                 });
             });
         }
 
-        window.likeRequest = async (id) => {
-            const docRef = doc(db, "requests", id);
-            await updateDoc(docRef, {
-                likes: increment(1)
-            });
-        };
-
-        document.getElementById('send-request-btn').addEventListener('click', async () => {
-            const input = document.getElementById('request-input');
-            if (input.value.trim() !== "") {
-                await addDoc(collection(db, "requests"), {
-                    text: input.value,
-                    timestamp: serverTimestamp(),
-                    likes: 0
+        // Открытие чата
+        function startChat(id, email) {
+            recipientId = id;
+            document.getElementById('chat-with').innerText = email;
+            const roomId = [currentUser.uid, id].sort().join('_');
+            
+            if (unsubMessages) unsubMessages();
+            
+            const q = query(collection(db, "chats", roomId, "messages"), orderBy("timestamp", "asc"));
+            unsubMessages = onSnapshot(q, (snap) => {
+                const box = document.getElementById('messages-box');
+                box.innerHTML = '';
+                snap.forEach(mDoc => {
+                    const m = mDoc.data();
+                    const d = document.createElement('div');
+                    d.className = `msg ${m.senderId === currentUser.uid ? 'sent' : 'received'}`;
+                    d.innerText = m.text;
+                    box.appendChild(d);
                 });
-                input.value = "";
+                box.scrollTop = box.scrollHeight;
+            });
+        }
+
+        // Отправка
+        document.getElementById('send-btn').onclick = async () => {
+            const input = document.getElementById('msg-input');
+            if (input.value.trim() && recipientId) {
+                const roomId = [currentUser.uid, recipientId].sort().join('_');
+                await addDoc(collection(db, "chats", roomId, "messages"), {
+                    text: input.value,
+                    senderId: currentUser.uid,
+                    timestamp: serverTimestamp()
+                });
+                input.value = '';
             }
-        });
+        };
     </script>
 </body>
 </html>
