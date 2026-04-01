@@ -7,27 +7,20 @@
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
         .hidden { display: none !important; }
-        
-        /* Авторизация */
         #login-block { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 320px; margin-top: 50px; text-align: center; }
         input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
         button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-
-        /* Интерфейс */
         .main-wrapper { display: flex; gap: 20px; width: 100%; max-width: 900px; height: 80vh; margin-top: 20px; }
         .user-list { width: 250px; background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-y: auto; }
         .user-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; border-radius: 8px; transition: 0.2s; font-size: 14px; }
         .user-item:hover { background: #e7f3ff; }
         .user-item.active { background: #007bff; color: white; }
-
         .chat-area { flex: 1; background: white; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
         .chat-header { padding: 15px; border-bottom: 1px solid #eee; font-weight: bold; background: #fff; display: flex; justify-content: space-between; align-items: center; }
         .messages-box { flex: 1; padding: 20px; overflow-y: auto; background: #f9f9f9; display: flex; flex-direction: column; gap: 10px; }
-        
         .msg { max-width: 70%; padding: 10px 14px; border-radius: 15px; font-size: 14px; }
         .sent { align-self: flex-end; background: #007bff; color: white; border-bottom-right-radius: 2px; }
         .received { align-self: flex-start; background: #e4e6eb; color: #000; border-bottom-left-radius: 2px; }
-
         .input-area { padding: 15px; display: flex; gap: 10px; border-top: 1px solid #eee; }
         .logout-btn { background: #ff4d4d; width: auto; font-size: 12px; padding: 5px 10px; }
     </style>
@@ -35,7 +28,7 @@
 <body>
 
     <div id="login-block">
-        <h3 style="margin-top:0">Вход в систему</h3>
+        <h3 style="margin-top:0">Вход</h3>
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Пароль">
         <button id="auth-btn">Войти / Регистрация</button>
@@ -46,15 +39,14 @@
             <h4 style="margin-top:0">Собеседники</h4>
             <div id="users-container"></div>
         </div>
-
         <div class="chat-area">
             <div class="chat-header">
-                <span id="chat-with">Выберите, кому написать</span>
+                <span id="chat-with">Выберите чат</span>
                 <button class="logout-btn" id="logout-btn">Выйти</button>
             </div>
             <div class="messages-box" id="messages-box"></div>
             <div class="input-area">
-                <input type="text" id="msg-input" placeholder="Введите сообщение...">
+                <input type="text" id="msg-input" placeholder="Сообщение...">
                 <button id="send-btn">➤</button>
             </div>
         </div>
@@ -82,7 +74,6 @@
         let recipientId = null;
         let unsubMessages = null;
 
-        // Авторизация
         document.getElementById('auth-btn').onclick = async () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
@@ -97,15 +88,13 @@
 
         document.getElementById('logout-btn').onclick = () => signOut(auth);
 
-        // Слушатель состояния
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
                 document.getElementById('login-block').classList.add('hidden');
                 document.getElementById('chat-block').classList.remove('hidden');
-                
-                // Добавляем тебя в список активных пользователей проекта
-                await setDoc(doc(db, "users", user.uid), { email: user.email, uid: user.uid }, { merge: true });
+                // Регистрируем тебя в новой коллекции пользователей
+                await setDoc(doc(db, "chat_users", user.uid), { email: user.email, uid: user.uid }, { merge: true });
                 loadUsers();
             } else {
                 document.getElementById('login-block').classList.remove('hidden');
@@ -113,9 +102,8 @@
             }
         });
 
-        // Загрузка списка (только те, кто зашел в этот проект)
         function loadUsers() {
-            onSnapshot(collection(db, "users"), (snap) => {
+            onSnapshot(collection(db, "chat_users"), (snap) => {
                 const container = document.getElementById('users-container');
                 container.innerHTML = '';
                 snap.forEach(uDoc => {
@@ -131,15 +119,12 @@
             });
         }
 
-        // Открытие чата
         function startChat(id, email) {
             recipientId = id;
             document.getElementById('chat-with').innerText = email;
             const roomId = [currentUser.uid, id].sort().join('_');
-            
             if (unsubMessages) unsubMessages();
-            
-            const q = query(collection(db, "chats", roomId, "messages"), orderBy("timestamp", "asc"));
+            const q = query(collection(db, "private_chats", roomId, "messages"), orderBy("timestamp", "asc"));
             unsubMessages = onSnapshot(q, (snap) => {
                 const box = document.getElementById('messages-box');
                 box.innerHTML = '';
@@ -154,12 +139,11 @@
             });
         }
 
-        // Отправка
         document.getElementById('send-btn').onclick = async () => {
             const input = document.getElementById('msg-input');
             if (input.value.trim() && recipientId) {
                 const roomId = [currentUser.uid, recipientId].sort().join('_');
-                await addDoc(collection(db, "chats", roomId, "messages"), {
+                await addDoc(collection(db, "private_chats", roomId, "messages"), {
                     text: input.value,
                     senderId: currentUser.uid,
                     timestamp: serverTimestamp()
