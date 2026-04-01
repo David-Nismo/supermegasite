@@ -28,25 +28,25 @@
 <body>
 
     <div id="login-block">
-        <h3 style="margin-top:0">Вход</h3>
+        <h3 style="margin-top:0">Вход / Регистрация</h3>
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Пароль">
-        <button id="auth-btn">Войти / Регистрация</button>
+        <button id="auth-btn">Войти</button>
     </div>
 
     <div id="chat-block" class="main-wrapper hidden">
         <div class="user-list">
-            <h4 style="margin-top:0">Собеседники</h4>
+            <h4 style="margin-top:0">Контакты</h4>
             <div id="users-container"></div>
         </div>
         <div class="chat-area">
             <div class="chat-header">
-                <span id="chat-with">Выберите чат</span>
+                <span id="chat-with">Выберите собеседника</span>
                 <button class="logout-btn" id="logout-btn">Выйти</button>
             </div>
             <div class="messages-box" id="messages-box"></div>
             <div class="input-area">
-                <input type="text" id="msg-input" placeholder="Сообщение...">
+                <input type="text" id="msg-input" placeholder="Напишите сообщение...">
                 <button id="send-btn">➤</button>
             </div>
         </div>
@@ -57,6 +57,7 @@
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // ТВОИ КЛЮЧИ
         const firebaseConfig = {
             apiKey: "AIzaSyDIuPsxUWVwJ1rVl1ytjVUHA84L4nQlwrM",
             authDomain: "supermegasite-6c1a9.firebaseapp.com",
@@ -74,6 +75,7 @@
         let recipientId = null;
         let unsubMessages = null;
 
+        // Вход и регистрация
         document.getElementById('auth-btn').onclick = async () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
@@ -82,7 +84,7 @@
             } catch {
                 try {
                     await createUserWithEmailAndPassword(auth, email, pass);
-                } catch (e) { alert(e.message); }
+                } catch (e) { alert("Ошибка: " + e.message); }
             }
         };
 
@@ -93,7 +95,7 @@
                 currentUser = user;
                 document.getElementById('login-block').classList.add('hidden');
                 document.getElementById('chat-block').classList.remove('hidden');
-                // Регистрируем тебя в новой коллекции пользователей
+                // Добавляем текущего пользователя в список chat_users
                 await setDoc(doc(db, "chat_users", user.uid), { email: user.email, uid: user.uid }, { merge: true });
                 loadUsers();
             } else {
@@ -102,6 +104,7 @@
             }
         });
 
+        // Загрузка списка пользователей
         function loadUsers() {
             onSnapshot(collection(db, "chat_users"), (snap) => {
                 const container = document.getElementById('users-container');
@@ -119,11 +122,16 @@
             });
         }
 
+        // Логика открытия чата
         function startChat(id, email) {
             recipientId = id;
-            document.getElementById('chat-with').innerText = email;
+            document.getElementById('chat-with').innerText = "Чат с: " + email;
+            
+            // Создаем уникальный ID комнаты
             const roomId = [currentUser.uid, id].sort().join('_');
+            
             if (unsubMessages) unsubMessages();
+            
             const q = query(collection(db, "private_chats", roomId, "messages"), orderBy("timestamp", "asc"));
             unsubMessages = onSnapshot(q, (snap) => {
                 const box = document.getElementById('messages-box');
@@ -139,16 +147,24 @@
             });
         }
 
+        // ТОТ САМЫЙ ФРАГМЕНТ ОТПРАВКИ
         document.getElementById('send-btn').onclick = async () => {
             const input = document.getElementById('msg-input');
-            if (input.value.trim() && recipientId) {
+            if (input.value.trim() !== "" && recipientId) {
                 const roomId = [currentUser.uid, recipientId].sort().join('_');
-                await addDoc(collection(db, "private_chats", roomId, "messages"), {
-                    text: input.value,
-                    senderId: currentUser.uid,
-                    timestamp: serverTimestamp()
-                });
-                input.value = '';
+                try {
+                    await addDoc(collection(db, "private_chats", roomId, "messages"), {
+                        text: input.value,
+                        senderId: currentUser.uid,
+                        timestamp: serverTimestamp()
+                    });
+                    input.value = '';
+                } catch (e) {
+                    console.error("Ошибка отправки:", e);
+                    alert("Не удалось отправить сообщение. Проверьте правила (Rules) в Firebase.");
+                }
+            } else if (!recipientId) {
+                alert("Сначала выберите собеседника в списке слева!");
             }
         };
     </script>
