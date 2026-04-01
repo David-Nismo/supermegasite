@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud Private Chat</title>
+    <title>Cloud Chat Pro</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; }
         .hidden { display: none !important; }
@@ -23,18 +23,20 @@
         .unread-badge { width: 10px; height: 10px; background: #ff4d4d; border-radius: 50%; position: absolute; right: 20px; }
 
         .chat-window { flex: 1; display: flex; flex-direction: column; position: relative; }
-        .chat-header { padding: 15px 25px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .close-chat { cursor: pointer; font-size: 20px; color: #999; margin-left: 15px; }
+        .chat-header { padding: 15px 25px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; z-index: 10; }
+        .close-chat { cursor: pointer; font-size: 20px; color: #999; margin-left: 15px; padding: 5px; }
         .messages-box { flex: 1; padding: 20px; overflow-y: auto; background: #f4f7f6; display: flex; flex-direction: column; gap: 12px; }
         
         .msg { max-width: 65%; padding: 10px 15px; border-radius: 18px; font-size: 14px; position: relative; }
-        .msg-info { font-size: 10px; margin-top: 4px; opacity: 0.6; display: flex; justify-content: flex-end; gap: 5px; }
+        .msg-status { font-size: 12px; margin-left: 5px; font-weight: bold; }
         .sent { align-self: flex-end; background: #007bff; color: white; border-bottom-right-radius: 4px; }
         .received { align-self: flex-start; background: white; color: #333; border-bottom-left-radius: 4px; border: 1px solid #eee; }
 
-        .input-area { padding: 20px; display: flex; gap: 10px; border-top: 1px solid #eee; }
+        .input-area { padding: 20px; display: flex; gap: 10px; border-top: 1px solid #eee; background: #fff; }
         .input-area input { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; outline: none; }
         .input-area button { background: #007bff; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; }
+        
+        #logout-btn { margin: 10px; background: #ff4d4d; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -51,14 +53,13 @@
         <div class="sidebar">
             <div class="sidebar-header">Контакты</div>
             <div id="users-container"></div>
-            <button id="logout-btn" style="margin: 10px; padding: 5px; cursor: pointer;">Выйти</button>
+            <button id="logout-btn">Выйти из аккаунта</button>
         </div>
+        
         <div class="chat-window hidden" id="chat-window">
             <div class="chat-header">
-                <div>
-                    <span id="chat-with-title" style="font-weight: bold; color: #007bff;"></span>
-                    <span class="close-chat" id="close-chat-btn">✕</span>
-                </div>
+                <span id="chat-with-title" style="font-weight: bold; color: #007bff;"></span>
+                <span class="close-chat" id="close-chat-btn" title="Закрыть чат">✕</span>
             </div>
             <div class="messages-box" id="messages-box"></div>
             <div class="input-area">
@@ -66,15 +67,16 @@
                 <button id="send-btn">➤</button>
             </div>
         </div>
-        <div id="empty-chat-msg" style="flex:1; display:flex; align-items:center; justify-content:center; color:#999;">
-            Выберите чат, чтобы начать общение
+
+        <div id="empty-chat-msg" style="flex:1; display:flex; align-items:center; justify-content:center; color:#999; background: #f4f7f6;">
+            Выберите чат из списка слева
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, updateDoc, serverTimestamp, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, updateDoc, serverTimestamp, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDIuPsxUWVwJ1rVl1ytjVUHA84L4nQlwrM",
@@ -93,7 +95,6 @@
         let recipientId = null;
         let unsubMessages = null;
 
-        // Авторизация
         document.getElementById('auth-btn').onclick = async () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
@@ -102,11 +103,18 @@
 
             try {
                 const res = await signInWithEmailAndPassword(auth, email, pass);
-                await setDoc(doc(db, "chat_users", res.user.uid), { username: name || res.user.email.split('@')[0], uid: res.user.uid }, { merge: true });
+                await setDoc(doc(db, "chat_users", res.user.uid), { 
+                    username: name || res.user.email.split('@')[0], 
+                    uid: res.user.uid 
+                }, { merge: true });
             } catch {
                 try {
                     const res = await createUserWithEmailAndPassword(auth, email, pass);
-                    await setDoc(doc(db, "chat_users", res.user.uid), { username: name || email.split('@')[0], email: email, uid: res.user.uid });
+                    await setDoc(doc(db, "chat_users", res.user.uid), { 
+                        username: name || email.split('@')[0], 
+                        email: email, 
+                        uid: res.user.uid 
+                    });
                 } catch (e) { alert(e.message); }
             }
         };
@@ -118,43 +126,42 @@
                 document.getElementById('chat-block').classList.remove('hidden');
                 loadUsers();
             } else {
-                location.reload();
+                currentUser = null;
+                document.getElementById('login-block').classList.remove('hidden');
+                document.getElementById('chat-block').classList.add('hidden');
             }
         });
 
         document.getElementById('logout-btn').onclick = () => signOut(auth);
 
-        // Загрузка контактов с проверкой непрочитанных
         function loadUsers() {
+            if (!currentUser) return;
             onSnapshot(collection(db, "chat_users"), (snap) => {
                 const container = document.getElementById('users-container');
                 container.innerHTML = '';
                 snap.forEach(uDoc => {
                     const u = uDoc.data();
-                    if (u.uid !== currentUser.uid) {
+                    const uID = u.uid || uDoc.id;
+                    if (uID !== currentUser.uid) {
                         const div = document.createElement('div');
                         div.className = 'user-item';
-                        div.id = `user-${u.uid}`;
+                        div.id = `user-${uID}`;
                         const displayName = u.username || u.email;
-                        div.innerHTML = `<span>${displayName}</span><div class="unread-badge hidden" id="badge-${u.uid}"></div>`;
-                        
-                        div.onclick = () => openChat(u.uid, displayName);
+                        div.innerHTML = `<span>${displayName}</span><div class="unread-badge hidden" id="badge-${uID}"></div>`;
+                        div.onclick = () => openChat(uID, displayName);
                         container.appendChild(div);
-                        checkUnreadMessages(u.uid);
+                        checkUnread(uID);
                     }
                 });
             });
         }
 
-        // Проверка непрочитанных сообщений для списка
-        function checkUnreadMessages(senderId) {
-            const roomId = [currentUser.uid, senderId].sort().join('_');
-            const q = query(collection(db, "private_chats", roomId, "messages"), where("senderId", "==", senderId), where("isRead", "==", false));
+        function checkUnread(otherId) {
+            const roomId = [currentUser.uid, otherId].sort().join('_');
+            const q = query(collection(db, "private_chats", roomId, "messages"), where("senderId", "==", otherId), where("isRead", "==", false));
             onSnapshot(q, (snap) => {
-                const badge = document.getElementById(`badge-${senderId}`);
-                if (badge) {
-                    !snap.empty ? badge.classList.remove('hidden') : badge.classList.add('hidden');
-                }
+                const badge = document.getElementById(`badge-${otherId}`);
+                if (badge) !snap.empty ? badge.classList.remove('hidden') : badge.classList.add('hidden');
             });
         }
 
@@ -166,10 +173,9 @@
             
             const roomId = [currentUser.uid, id].sort().join('_');
             
-            // Помечаем сообщения как прочитанные
-            const unreadQuery = query(collection(db, "private_chats", roomId, "messages"), where("senderId", "==", id), where("isRead", "==", false));
-            const unreadSnap = await getDocs(unreadQuery);
-            unreadSnap.forEach(async (m) => await updateDoc(m.ref, { isRead: true }));
+            // Отмечаем прочитанным при открытии
+            const unreadSnap = await getDocs(query(collection(db, "private_chats", roomId, "messages"), where("senderId", "==", id), where("isRead", "==", false)));
+            unreadSnap.forEach(m => updateDoc(m.ref, { isRead: true }));
 
             if (unsubMessages) unsubMessages();
             const q = query(collection(db, "private_chats", roomId, "messages"), orderBy("timestamp", "asc"));
@@ -181,14 +187,13 @@
                     const d = document.createElement('div');
                     d.className = `msg ${m.senderId === currentUser.uid ? 'sent' : 'received'}`;
                     const status = m.senderId === currentUser.uid ? (m.isRead ? ' ✓✓' : ' ✓') : '';
-                    d.innerHTML = `${m.text}<div class="msg-info"><span>${status}</span></div>`;
+                    d.innerHTML = `${m.text}<span class="msg-status">${status}</span>`;
                     box.appendChild(d);
                 });
                 box.scrollTop = box.scrollHeight;
             });
         }
 
-        // Закрытие чата
         document.getElementById('close-chat-btn').onclick = () => {
             document.getElementById('chat-window').classList.add('hidden');
             document.getElementById('empty-chat-msg').classList.remove('hidden');
@@ -196,8 +201,7 @@
             if (unsubMessages) unsubMessages();
         };
 
-        // Отправка сообщений (Кнопка + Enter)
-        const sendMessage = async () => {
+        const sendMsg = async () => {
             const input = document.getElementById('msg-input');
             if (input.value.trim() && recipientId) {
                 const roomId = [currentUser.uid, recipientId].sort().join('_');
@@ -211,8 +215,8 @@
             }
         };
 
-        document.getElementById('send-btn').onclick = sendMessage;
-        document.getElementById('msg-input').onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+        document.getElementById('send-btn').onclick = sendMsg;
+        document.getElementById('msg-input').onkeydown = (e) => { if (e.key === 'Enter') sendMsg(); };
     </script>
 </body>
 </html>
