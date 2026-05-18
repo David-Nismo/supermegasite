@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -14,12 +14,20 @@
         #google-btn { background: white !important; color: #444 !important; border: 1px solid #ddd !important; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
         #google-btn:hover { background: #f8f9fa !important; }
         #google-btn img { width: 18px; }
+        
         .main-container { display: flex; width: 100%; max-width: 1000px; height: 90vh; background: white; margin-top: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden; }
         .sidebar { width: 300px; border-right: 1px solid #eee; display: flex; flex-direction: column; background: #fff; }
-        .sidebar-header { padding: 20px; background: #f8f9fa; border-bottom: 1px solid #eee; font-weight: bold; text-align: center; }
+        .sidebar-header { padding: 20px; background: #f8f9fa; border-bottom: 1px solid #eee; font-weight: bold; text-align: center; display: flex; flex-direction: column; gap: 5px; }
+        .study-timer { font-size: 13px; color: #28a745; font-weight: normal; background: #e6f4ea; padding: 4px 8px; border-radius: 12px; display: inline-block; align-self: center;}
+        
         #users-container { flex: 1; overflow-y: auto; }
         .user-item { padding: 15px 20px; border-bottom: 1px solid #f9f9f9; cursor: pointer; display: flex; align-items: center; gap: 10px; position: relative; transition: background 0.2s; }
         .user-item:hover { background: #f0f7ff; }
+        
+        /* НОВОЕ: Индикатор онлайна */
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: #ccc; transition: 0.3s; }
+        .status-dot.online { background-color: #28a745; box-shadow: 0 0 5px #28a745; }
+        
         .chat-window { flex: 1; display: flex; flex-direction: column; position: relative; }
         .chat-header { padding: 15px 25px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; }
         .messages-box { flex: 1; padding: 20px; overflow-y: auto; background: #f4f7f6; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
@@ -50,7 +58,10 @@
 
     <div id="chat-block" class="main-container hidden">
         <div class="sidebar">
-            <div class="sidebar-header">Чаты</div>
+            <div class="sidebar-header">
+                Чаты
+                <div class="study-timer" id="study-timer-display">В учебе: 00:00:00</div>
+            </div>
             <div id="users-container"></div>
             <button id="logout-btn">Выйти</button>
         </div>
@@ -72,19 +83,24 @@
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-        // Твои ключи Supabase
         const SUPABASE_URL = 'https://sdlqiegoazscsperolgz.supabase.co'
         const SUPABASE_KEY = 'sb_publishable_HhVXiEyvOjBLchlzaWydtQ_72hVDYOu'
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
         let currentUser = null;
         let recipientId = null;
+        
+        // НОВОЕ: Переменные для онлайна и таймера
+        let onlineUsers = new Set();
+        let presenceChannel = null;
+        
+        let studySeconds = 0;
+        let timerInterval = null;
+        let saveInterval = null;
 
         // --- АВТОРИЗАЦИЯ ---
-        
-        // Вход через Google
         document.getElementById('google-btn').onclick = async () => {
-            const currentUrl = window.location.origin + window.location.pathname; // Динамический URL для GitHub Pages
+            const currentUrl = window.location.origin + window.location.pathname; 
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: { redirectTo: currentUrl } 
@@ -92,7 +108,6 @@
             if (error) alert(error.message);
         };
 
-        // Вход/Регистрация (Email)
         document.getElementById('auth-btn').onclick = async () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
@@ -107,31 +122,41 @@
             }
         };
 
-        // Обработка входа юзера
         async function handleLogin(user) {
             currentUser = user;
             
-            // Сохраняем/Обновляем профиль
+            // НОВОЕ: Достаем текущее время учебы из базы (если оно там уже есть)
+            const { data: profileData } = await supabase
+                .from('profiles')
+                .select('study_time')
+                .eq('id', currentUser.id)
+                .single();
+                
+            studySeconds = profileData?.study_time || 0;
+            updateTimerDisplay();
+
+            // Сохраняем/Обновляем профиль (ВНИМАНИЕ: добавили onConflict, чтобы не затирать время)
             const { error: profileError } = await supabase.from('profiles').upsert({ 
                 id: currentUser.id, 
                 username: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
                 email: currentUser.email 
-            });
+            }, { onConflict: 'id' });
 
             if (profileError) console.error("Ошибка сохранения профиля:", profileError.message);
             
             document.getElementById('login-block').classList.add('hidden');
             document.getElementById('chat-block').classList.remove('hidden');
-            loadUsers();
+            
+            await loadUsers();
+            initPresence(); // НОВОЕ: Запускаем слежку за онлайном
+            startStudyTimer(); // НОВОЕ: Запускаем таймер
         }
 
-        // Проверка сессии при загрузке
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
             handleLogin(session.user);
         }
 
-        // Слушатель изменения статуса
         supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' && session) {
                 handleLogin(session.user);
@@ -140,29 +165,96 @@
                 document.getElementById('login-block').classList.remove('hidden');
                 document.getElementById('chat-block').classList.add('hidden');
                 document.getElementById('users-container').innerHTML = '';
+                
+                // НОВОЕ: Чистим всё при выходе
+                if (presenceChannel) supabase.removeChannel(presenceChannel);
+                stopStudyTimer();
             }
         });
 
         // Выход
         document.getElementById('logout-btn').onclick = () => supabase.auth.signOut();
 
+        // --- НОВОЕ: ЛОГИКА ОНЛАЙНА (PRESENCE) ---
+        function initPresence() {
+            presenceChannel = supabase.channel('online-users');
+
+            presenceChannel
+                .on('presence', { event: 'sync' }, () => {
+                    const newState = presenceChannel.presenceState();
+                    onlineUsers.clear();
+                    
+                    // Собираем ID всех, кто сейчас онлайн
+                    for (const id in newState) {
+                        onlineUsers.add(newState[id][0].user_id);
+                    }
+                    updateUsersUI(); // Обновляем зеленые точки
+                })
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        // Сообщаем всем, что мы онлайн
+                        await presenceChannel.track({ user_id: currentUser.id });
+                    }
+                });
+        }
+
+        // --- НОВОЕ: ЛОГИКА ТАЙМЕРА УЧЕБЫ ---
+        function startStudyTimer() {
+            // Тикает на экране каждую секунду
+            timerInterval = setInterval(() => {
+                studySeconds++;
+                updateTimerDisplay();
+            }, 1000);
+
+            // Сохраняет в БД каждую минуту (чтобы не убить лимиты Supabase)
+            saveInterval = setInterval(async () => {
+                await supabase.from('profiles').update({ study_time: studySeconds }).eq('id', currentUser.id);
+            }, 60000); 
+        }
+
+        function stopStudyTimer() {
+            clearInterval(timerInterval);
+            clearInterval(saveInterval);
+            // Сохраняем остатки перед выходом
+            if (currentUser) {
+                supabase.from('profiles').update({ study_time: studySeconds }).eq('id', currentUser.id);
+            }
+        }
+
+        function updateTimerDisplay() {
+            const h = String(Math.floor(studySeconds / 3600)).padStart(2, '0');
+            const m = String(Math.floor((studySeconds % 3600) / 60)).padStart(2, '0');
+            const s = String(studySeconds % 60).padStart(2, '0');
+            document.getElementById('study-timer-display').innerText = `В учебе: ${h}:${m}:${s}`;
+        }
+
         // --- ЛОГИКА ЧАТА ---
+        let allUsersData = [];
 
         async function loadUsers() {
             const { data: users, error } = await supabase.from('profiles').select('*');
-            if (error) {
-                console.error("Ошибка загрузки пользователей:", error.message);
-                return;
-            }
+            if (error) return console.error("Ошибка загрузки пользователей:", error.message);
+            
+            allUsersData = users; // Сохраняем глобально для перерисовки
+            updateUsersUI();
+        }
 
+        // НОВОЕ: Вынес отрисовку списка в отдельную функцию
+        function updateUsersUI() {
             const container = document.getElementById('users-container');
             container.innerHTML = '';
             
-            users.forEach(user => {
+            allUsersData.forEach(user => {
                 if (user.id !== currentUser.id) {
+                    const isOnline = onlineUsers.has(user.id);
                     const div = document.createElement('div');
                     div.className = 'user-item';
-                    div.innerHTML = `<span>${user.username || user.email}</span>`;
+                    
+                    // Добавили индикатор онлайна
+                    div.innerHTML = `
+                        <div class="status-dot ${isOnline ? 'online' : ''}"></div>
+                        <span>${user.username || user.email}</span>
+                    `;
                     div.onclick = () => openChat(user.id, user.username || user.email);
                     container.appendChild(div);
                 }
@@ -177,8 +269,10 @@
             
             await loadMessages();
 
-            // Подписка на новые сообщения в реальном времени
-            supabase.removeAllChannels();
+            // Чтобы не удалялся канал онлайна, отписываемся только от сообщений конкретной комнаты
+            const existingChannel = supabase.getChannels().find(c => c.topic === 'realtime:room-messages');
+            if (existingChannel) supabase.removeChannel(existingChannel);
+
             supabase
                 .channel('room-messages')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
@@ -206,7 +300,6 @@
             if (msgs) {
                 msgs.forEach(renderMessage);
             }
-            // Прокрутка вниз при загрузке
             box.scrollTop = box.scrollHeight;
         }
 
@@ -216,7 +309,6 @@
             d.className = `msg ${m.sender_id === currentUser.id ? 'sent' : 'received'}`;
             d.innerText = m.text;
             box.appendChild(d);
-            // Плавная прокрутка к новому сообщению
             box.scrollTop = box.scrollHeight;
         }
 
@@ -225,7 +317,6 @@
             const text = input.value.trim();
             if (!text || !recipientId) return;
 
-            // Сразу очищаем поле для удобства
             input.value = '';
 
             const { error } = await supabase.from('messages').insert({
@@ -239,6 +330,15 @@
 
         document.getElementById('send-btn').onclick = sendMsg;
         document.getElementById('msg-input').onkeydown = (e) => { if (e.key === 'Enter') sendMsg(); };
+
+        // Сохраняем время при закрытии вкладки
+        window.addEventListener('beforeunload', () => {
+            if (currentUser) {
+                stopStudyTimer(); 
+                // navigator.sendBeacon можно юзать для гарантированной отправки, 
+                // но обычного update при таймере раз в минуту обычно хватает с головой.
+            }
+        });
 
     </script>
 </body>
