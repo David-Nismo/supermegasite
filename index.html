@@ -38,13 +38,14 @@
             display: flex; flex-direction: column; gap: 10px;
         }
         .toast {
-            background: linear-gradient(135deg, var(--gold) 0%, #b45309 100%);
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
             color: #fff; padding: 14px 24px; border-radius: 10px;
-            font-weight: bold; box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+            font-weight: bold; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
             transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex; align-items: center; gap: 10px; border: 1px solid rgba(255,255,255,0.2);
+            display: flex; align-items: center; gap: 10px; border: 1px solid var(--accent);
         }
         .toast.show { transform: translateX(0); }
+        .toast.achievement { background: linear-gradient(135deg, var(--gold) 0%, #b45309 100%); border-color: rgba(255,255,255,0.3); }
 
         /* ЭКРАН АВТОРИЗАЦИИ */
         #login-block { 
@@ -82,39 +83,54 @@
             border-radius: 24px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);
         }
 
-        /* БОКОВАЯ ПАНЕЛЬ (ПРОФИЛЬ, СПИСОК ЧАТОВ) */
+        /* БОКОВАЯ ПАНЕЛЬ */
         .sidebar { 
-            width: 300px; border-right: 1px solid var(--border-color); 
+            width: 320px; border-right: 1px solid var(--border-color); 
             display: flex; flex-direction: column; background: rgba(17, 24, 39, 0.4); 
         }
         .sidebar-header { 
-            padding: 24px; background: rgba(11, 15, 25, 0.6); border-bottom: 1px solid var(--border-color); 
-            text-align: center; display: flex; flex-direction: column; gap: 10px; 
+            padding: 20px; background: rgba(11, 15, 25, 0.6); border-bottom: 1px solid var(--border-color); 
+            text-align: center; display: flex; flex-direction: column; gap: 8px; 
         }
-        .sidebar-header .title { font-weight: 700; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; }
+        .sidebar-header .title { font-weight: 700; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; }
         .study-timer { 
             font-size: 22px; color: #fff; font-weight: 800; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); 
-            padding: 8px 20px; border-radius: 30px; display: inline-block; align-self: center;
-            box-shadow: 0 0 20px rgba(2, 132, 199, 0.4), inset 0 2px 4px rgba(255,255,255,0.2);
-            font-variant-numeric: tabular-nums;
+            padding: 6px 18px; border-radius: 30px; display: inline-block; align-self: center;
+            box-shadow: 0 0 20px rgba(2, 132, 199, 0.4); font-variant-numeric: tabular-nums;
         }
+
+        /* Поле изменения статуса */
+        .status-input-box { padding: 10px 20px; background: rgba(11, 15, 25, 0.3); border-bottom: 1px solid var(--border-color); }
+        .status-input-box input {
+            width: 100%; background: #0b0f19; border: 1px solid var(--border-color);
+            border-radius: 6px; padding: 6px 10px; color: #fff; font-size: 12px; outline: none; box-sizing: border-box;
+        }
+        .status-input-box input:focus { border-color: var(--accent); }
         
-        #users-container { flex: 1; overflow-y: auto; padding: 15px 0; }
+        #users-container { flex: 1; overflow-y: auto; padding: 10px 0; }
         .user-item { 
-            padding: 14px 24px; cursor: pointer; display: flex; align-items: center; 
-            gap: 14px; transition: 0.2s; border-left: 4px solid transparent; margin-bottom: 2px;
+            padding: 12px 20px; cursor: pointer; display: flex; align-items: center; 
+            justify-content: space-between; transition: 0.2s; border-left: 4px solid transparent;
         }
         .user-item:hover { background: rgba(56, 189, 248, 0.08); border-left-color: var(--accent); }
+        .user-info-block { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+        .user-meta { display: flex; flex-direction: column; min-width: 0; }
+        .user-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-status-text { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; font-style: italic; }
         
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: #4b5563; transition: 0.3s; }
+        /* Кнопка "Позвать" */
+        .ping-btn {
+            background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3);
+            color: var(--accent); padding: 4px 8px; border-radius: 6px; font-size: 11px;
+            cursor: pointer; transition: 0.2s; font-weight: bold; margin-left: 8px;
+        }
+        .ping-btn:hover { background: var(--accent); color: #000; transform: scale(1.05); }
+
+        .status-dot { width: 9px; height: 9px; border-radius: 50%; background-color: #4b5563; flex-shrink: 0; }
         .status-dot.online { 
-            background-color: var(--success); 
-            box-shadow: 0 0 10px var(--success), 0 0 20px var(--success); 
-            animation: pulse 2s infinite;
+            background-color: var(--success); box-shadow: 0 0 10px var(--success); animation: pulse 2s infinite;
         }
-        @keyframes pulse {
-            0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; }
-        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         
         /* БЛОК ДОСТИЖЕНИЙ */
         .achievements-box { padding: 20px; border-top: 1px solid var(--border-color); background: rgba(11, 15, 25, 0.4); }
@@ -123,7 +139,7 @@
         .badge { 
             background: #1f2937; padding: 10px; border-radius: 12px; text-align: center; 
             font-size: 20px; filter: grayscale(100%); opacity: 0.3; transition: all 0.4s ease; 
-            position: relative; border: 1px solid transparent; cursor: pointer;
+            position: relative; border: 1px solid transparent;
         }
         .badge.unlocked { 
             filter: grayscale(0%); opacity: 1; background: #2d2213; 
@@ -135,11 +151,11 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.5); border: 1px solid var(--border-color);
         }
 
-        /* ОКНО СЕРЕДИНЫ (ЧАТ) */
+        /* ОКНО ЧАТА */
         .chat-window { flex: 1; display: flex; flex-direction: column; background: rgba(15, 23, 42, 0.3); }
-        .chat-header { padding: 24px; border-bottom: 1px solid var(--border-color); background: rgba(17, 24, 39, 0.8); font-weight: 700; font-size: 18px; letter-spacing: -0.3px; }
+        .chat-header { padding: 24px; border-bottom: 1px solid var(--border-color); background: rgba(17, 24, 39, 0.8); font-weight: 700; font-size: 18px; }
         .messages-box { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-        .msg { max-width: 60%; padding: 12px 18px; border-radius: 16px; font-size: 14.5px; word-wrap: break-word; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .msg { max-width: 60%; padding: 12px 18px; border-radius: 16px; font-size: 14.5px; word-wrap: break-word; line-height: 1.5; }
         .sent { align-self: flex-end; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; border-bottom-right-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
         .received { align-self: flex-start; background: var(--panel-light); color: #f3f4f6; border-bottom-left-radius: 4px; border: 1px solid var(--border-color); }
         
@@ -152,28 +168,23 @@
         .input-area button { 
             background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); color: white; border: none; width: 46px; height: 46px; 
             border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: 0.2s; 
-            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
         }
         .input-area button:hover { transform: scale(1.08); }
 
-        /* ТАБЛИЦА ЛИДЕРОВ (СПРАВА) */
+        /* ТАБЛИЦА ЛИДЕРОВ */
         .leaderboard-panel { width: 260px; border-left: 1px solid var(--border-color); background: rgba(17, 24, 39, 0.4); display: flex; flex-direction: column; }
         .leaderboard-header { padding: 24px; background: rgba(11, 15, 25, 0.6); border-bottom: 1px solid var(--border-color); font-weight: 800; text-transform: uppercase; font-size: 12px; color: var(--text-muted); letter-spacing: 1.5px; text-align: center;}
         .leader-list { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .leader-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(31, 41, 55, 0.5); border-radius: 12px; border: 1px solid rgba(255,255,255,0.03); font-size: 13.5px; transition: 0.3s; }
-        .leader-item:hover { background: rgba(31, 41, 55, 0.8); transform: translateY(-1px); }
-        .leader-rank { font-weight: 900; width: 24px; color: var(--accent); font-size: 14px; }
-        .leader-name { flex: 1; margin-left: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #f3f4f6; font-weight: 500; }
-        .leader-time { font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
+        .leader-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(31, 41, 55, 0.5); border-radius: 12px; font-size: 13.5px; }
+        .leader-rank { font-weight: 900; width: 24px; color: var(--accent); }
+        .leader-name { flex: 1; margin-left: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #f3f4f6; }
+        .leader-time { font-weight: 700; color: var(--gold); }
 
         #logout-btn { margin: 15px; background: #dc2626; color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         #logout-btn:hover { background: #b91c1c; }
 
-        /* Кастомный красивый скроллбар */
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
     </style>
 </head>
 <body>
@@ -197,6 +208,11 @@
                 <div class="title">Время в учёбе</div>
                 <div class="study-timer" id="study-timer-display">00:00:00</div>
             </div>
+            
+            <div class="status-input-box">
+                <input type="text" id="my-status-input" placeholder="Установить свой статус..." maxlength="50">
+            </div>
+
             <div id="users-container"></div>
             
             <div class="achievements-box">
@@ -249,28 +265,25 @@
         let leaderboardInterval = null;
         let timerStartedAt = null;
         let baseSeconds = 0;
+        let allUsersData = [];
 
-        // --- УВЕДОМЛЕНИЯ ---
-        function showToast(text) {
+        function showToast(text, isAchievement = false) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerHTML = `🎉 <span>${text}</span>`;
+            toast.className = `toast ${isAchievement ? 'achievement' : ''}`;
+            toast.innerHTML = `${isAchievement ? '🎉' : '🔔'} <span>${text}</span>`;
             container.appendChild(toast);
-            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => toast.classList.add('show'), 50);
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 400);
             }, 4000);
         }
 
-        // --- АВТОРИЗАЦИЯ ---
+        // --- ВХОД И РЕГИСТРАЦИЯ ---
         document.getElementById('google-btn').onclick = async () => {
             const currentUrl = window.location.origin + window.location.pathname; 
-            await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: currentUrl } 
-            });
+            await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: currentUrl } });
         };
 
         document.getElementById('auth-btn').onclick = async () => {
@@ -282,7 +295,7 @@
             if (error) {
                 const { error: signError } = await supabase.auth.signUp({ email, password });
                 if (signError) alert(signError.message);
-                else alert('Регистрация успешна! Теперь вы можете войти.');
+                else alert('Регистрация успешна! Войдите.');
             }
         };
 
@@ -291,13 +304,17 @@
             currentUser = user;
             
             const localSavedTime = localStorage.getItem(`study_seconds_${currentUser.id}`);
-            const { data: profileData } = await supabase.from('profiles').select('study_time').eq('id', currentUser.id).maybeSingle();
+            const { data: profileData } = await supabase.from('profiles').select('study_time, status_text').eq('id', currentUser.id).maybeSingle();
                 
             const dbSeconds = profileData?.study_time || 0;
             studySeconds = localSavedTime ? Math.max(parseInt(localSavedTime), dbSeconds) : dbSeconds;
             
+            if (profileData?.status_text) {
+                document.getElementById('my-status-input').value = profileData.status_text;
+            }
+            
             updateTimerDisplay();
-            checkAchievements(true); // Загружаем ачивки без вызова алертов
+            checkAchievements(true); 
 
             await supabase.from('profiles').upsert({ 
                 id: currentUser.id, 
@@ -312,6 +329,7 @@
             initPresence(); 
             startStudyTimer(); 
             loadLeaderboard();
+            initGlobalMessageListener(); // Слушаем пинги от других ребят
             
             leaderboardInterval = setInterval(loadLeaderboard, 10000);
         }
@@ -331,7 +349,16 @@
 
         document.getElementById('logout-btn').onclick = () => supabase.auth.signOut();
 
-        // --- PRESENCE (ОНЛАЙН) ---
+        // --- ИЗМЕНЕНИЕ СЛОВА СТАТУСА ---
+        document.getElementById('my-status-input').onchange = async (e) => {
+            const text = e.target.value.trim();
+            if (currentUser) {
+                await supabase.from('profiles').update({ status_text: text }).eq('id', currentUser.id);
+                loadUsers(); // Перерисовать у себя локально
+            }
+        };
+
+        // --- ОНЛАЙН СТАТУСЫ ---
         function initPresence() {
             if (presenceChannel) supabase.removeChannel(presenceChannel);
             presenceChannel = supabase.channel('online-users');
@@ -354,8 +381,7 @@
 
         // --- ТАЙМЕР И АЧИВКИ ---
         function startStudyTimer() {
-            clearInterval(timerInterval);
-            clearInterval(saveInterval);
+            clearInterval(timerInterval); clearInterval(saveInterval);
             timerStartedAt = Date.now();
             baseSeconds = studySeconds;
 
@@ -363,7 +389,7 @@
                 const elapsedSinceStart = Math.floor((Date.now() - timerStartedAt) / 1000);
                 studySeconds = baseSeconds + elapsedSinceStart;
                 updateTimerDisplay();
-                checkAchievements(false); // Проверяем на новые открытия в реальном времени
+                checkAchievements(false); 
                 localStorage.setItem(`study_seconds_${currentUser.id}`, studySeconds);
             }, 1000);
 
@@ -375,8 +401,7 @@
         }
 
         function stopStudyTimer() {
-            clearInterval(timerInterval);
-            clearInterval(saveInterval);
+            clearInterval(timerInterval); clearInterval(saveInterval);
             if (currentUser) {
                 supabase.from('profiles').update({ study_time: studySeconds }).eq('id', currentUser.id);
             }
@@ -396,53 +421,33 @@
                 { id: 'badge-3', time: 3600, title: '⚡ Профи знаний' },
                 { id: 'badge-4', time: 18000, title: '👑 Легендарный Ботаник' }
             ];
-
             targets.forEach(t => {
                 const badgeEl = document.getElementById(t.id);
                 if (studySeconds >= t.time && !badgeEl.classList.contains('unlocked')) {
                     badgeEl.classList.add('unlocked');
-                    if (!silent) {
-                        showToast(`Открыто достижение: ${t.title}`);
-                    }
+                    if (!silent) showToast(`Открыто достижение: ${t.title}`, true);
                 }
             });
         }
 
         // --- ТАБЛИЦА ЛИДЕРОВ ---
         async function loadLeaderboard() {
-            const { data: topUsers } = await supabase
-                .from('profiles')
-                .select('username, study_time')
-                .order('study_time', { ascending: false })
-                .limit(5);
-
+            const { data: topUsers } = await supabase.from('profiles').select('username, study_time').order('study_time', { ascending: false }).limit(5);
             const container = document.getElementById('leader-list');
             container.innerHTML = '';
-
             if (topUsers) {
                 topUsers.forEach((user, index) => {
                     const h = Math.floor(user.study_time / 3600);
                     const m = Math.floor((user.study_time % 3600) / 60);
-                    
                     const div = document.createElement('div');
                     div.className = 'leader-item';
-                    
-                    let rank = index + 1;
-                    if(index === 0) rank = '👑';
-
-                    div.innerHTML = `
-                        <span class="leader-rank">${rank}</span>
-                        <span class="leader-name">${user.username}</span>
-                        <span class="leader-time">${h}ч ${m}м</span>
-                    `;
+                    div.innerHTML = `<span class="leader-rank">${index === 0 ? '👑' : index + 1}</span><span class="leader-name">${user.username}</span><span class="leader-time">${h}ч ${m}м</span>`;
                     container.appendChild(div);
                 });
             }
         }
 
-        // --- ЛОГИКА ЧАТА ---
-        let allUsersData = [];
-
+        // --- ЛОГИКА ОТОБРАЖЕНИЯ ЧАТОВ ---
         async function loadUsers() {
             const { data: users, error } = await supabase.from('profiles').select('*');
             if (error) return console.error(error.message);
@@ -461,15 +466,59 @@
                     div.className = 'user-item';
                     
                     div.innerHTML = `
-                        <div class="status-dot ${isOnline ? 'online' : ''}"></div>
-                        <span>${user.username || user.email}</span>
+                        <div class="user-info-block">
+                            <div class="status-dot ${isOnline ? 'online' : ''}"></div>
+                            <div class="user-meta">
+                                <span class="user-name">${user.username || user.email}</span>
+                                <span class="user-status-text">${user.status_text || 'Нет статуса'}</span>
+                            </div>
+                        </div>
+                        ${isOnline ? `<button class="ping-btn" data-id="${user.id}" data-name="${user.username || user.email}">Позвать 👋</button>` : ''}
                     `;
-                    div.onclick = () => openChat(user.id, user.username || user.email);
+                    
+                    // Клик по блоку информации открывает чат
+                    div.querySelector('.user-info-block').onclick = () => openChat(user.id, user.username || user.email);
+                    
+                    // Клик по кнопке "Позвать" посылает пинг
+                    if (isOnline) {
+                        div.querySelector('.ping-btn').onclick = (e) => {
+                            e.stopPropagation();
+                            sendPingNotification(user.id, user.username || user.email);
+                        };
+                    }
                     container.appendChild(div);
                 }
             });
         }
 
+        // --- ФУНКЦИЯ ПИНГА ---
+        async function sendPingNotification(targetId, targetName) {
+            const pingMessage = "👋 Привет! Давай поучимся вместе?";
+            await supabase.from('messages').insert({ 
+                text: pingMessage, 
+                sender_id: currentUser.id, 
+                recipient_id: targetId 
+            });
+            showToast(`Вы позвали @${targetName} учиться!`);
+            openChat(targetId, targetName);
+        }
+
+        // Глобальный слушатель для вызова всплывающих окон при получении пинга
+        function initGlobalMessageListener() {
+            supabase
+                .channel('global-pings')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                    if (payload.new.recipient_id === currentUser.id && payload.new.text.includes("Давай поучимся вместе?")) {
+                        // Ищем имя отправителя по его ID
+                        const sender = allUsersData.find(u => u.id === payload.new.sender_id);
+                        const senderName = sender ? sender.username : "Кто-то";
+                        showToast(`@${senderName} зовет вас учиться! 📚`);
+                    }
+                })
+                .subscribe();
+        }
+
+        // --- ДИАЛОГИ И МГНОВЕННЫЕ СООБЩЕНИЯ ---
         async function openChat(id, name) {
             recipientId = id;
             document.getElementById('chat-window').classList.remove('hidden');
@@ -520,7 +569,6 @@
             const input = document.getElementById('msg-input');
             const text = input.value.trim();
             if (!text || !recipientId) return;
-
             input.value = '';
             await supabase.from('messages').insert({ text, sender_id: currentUser.id, recipient_id: recipientId });
         };
@@ -529,9 +577,7 @@
         document.getElementById('msg-input').onkeydown = (e) => { if (e.key === 'Enter') sendMsg(); };
 
         window.addEventListener('beforeunload', () => {
-            if (currentUser) {
-                supabase.from('profiles').update({ study_time: studySeconds }).eq('id', currentUser.id);
-            }
+            if (currentUser) supabase.from('profiles').update({ study_time: studySeconds }).eq('id', currentUser.id);
         });
     </script>
 </body>
