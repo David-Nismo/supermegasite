@@ -3,52 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud Chat Pro</title>
+    <title>Cloud Chat & Study Pro</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; }
+        :root {
+            --bg-dark: #090d16;
+            --panel-dark: #111827;
+            --panel-light: #1f2937;
+            --border-color: #374151;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.4);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --success: #10b981;
+            --gold: #f59e0b;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            background: radial-gradient(circle at top, #1e1b4b 0%, var(--bg-dark) 70%);
+            color: var(--text-main);
+            margin: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            height: 100vh; 
+            overflow: hidden;
+        }
+        
         .hidden { display: none !important; }
-        #login-block { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 320px; margin-top: 80px; text-align: center; }
-        #login-block input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        #login-block button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; transition: 0.2s; }
-        #login-block button:hover { background: #0056b3; }
-        #google-btn { background: white !important; color: #444 !important; border: 1px solid #ddd !important; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
-        #google-btn:hover { background: #f8f9fa !important; }
+
+        /* ВСПОЛЫВАЮЩИЕ УВЕДОМЛЕНИЯ (TOASTS) */
+        #toast-container {
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .toast {
+            background: linear-gradient(135deg, var(--gold) 0%, #b45309 100%);
+            color: #fff; padding: 14px 24px; border-radius: 10px;
+            font-weight: bold; box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+            transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; gap: 10px; border: 1px solid rgba(255,255,255,0.2);
+        }
+        .toast.show { transform: translateX(0); }
+
+        /* ЭКРАН АВТОРИЗАЦИИ */
+        #login-block { 
+            background: rgba(17, 24, 39, 0.8); backdrop-filter: blur(12px);
+            padding: 40px; border-radius: 20px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 40px rgba(99, 102, 241, 0.1); 
+            width: 340px; text-align: center; border: 1px solid var(--border-color);
+        }
+        #login-block h2 { margin-top: 0; margin-bottom: 24px; font-size: 28px; font-weight: 800; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        #login-block input { 
+            width: 100%; padding: 14px 16px; margin: 10px 0; 
+            background: #0b0f19; border: 1px solid var(--border-color); 
+            border-radius: 10px; color: white; box-sizing: border-box; outline: none; font-size: 14px;
+            transition: 0.3s;
+        }
+        #login-block input:focus { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+        #login-block button { 
+            width: 100%; padding: 14px; background: linear-gradient(135deg, #38bdf8 0%, #4f46e5 100%); 
+            color: white; border: none; border-radius: 10px; cursor: pointer; 
+            font-weight: bold; margin-top: 15px; transition: 0.3s; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+        }
+        #login-block button:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6); }
+        #google-btn { 
+            background: #ffffff !important; color: #111827 !important; 
+            display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 12px; 
+            box-shadow: 0 4px 15px rgba(255,255,255,0.1) !important;
+        }
         #google-btn img { width: 18px; }
         
-        .main-container { display: flex; width: 100%; max-width: 1000px; height: 90vh; background: white; margin-top: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden; }
-        .sidebar { width: 300px; border-right: 1px solid #eee; display: flex; flex-direction: column; background: #fff; }
-        .sidebar-header { padding: 20px; background: #f8f9fa; border-bottom: 1px solid #eee; font-weight: bold; text-align: center; display: flex; flex-direction: column; gap: 5px; }
-        .study-timer { font-size: 13px; color: #28a745; font-weight: normal; background: #e6f4ea; padding: 4px 8px; border-radius: 12px; display: inline-block; align-self: center;}
+        /* ГЛАВНОЕ ОКНО ПРИЛОЖЕНИЯ */
+        .main-container { 
+            display: flex; width: 95vw; max-width: 1300px; height: 85vh; 
+            background: rgba(17, 24, 39, 0.6); backdrop-filter: blur(16px);
+            box-shadow: 0 30px 70px rgba(0,0,0,0.8); 
+            border-radius: 24px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        /* БОКОВАЯ ПАНЕЛЬ (ПРОФИЛЬ, СПИСОК ЧАТОВ) */
+        .sidebar { 
+            width: 300px; border-right: 1px solid var(--border-color); 
+            display: flex; flex-direction: column; background: rgba(17, 24, 39, 0.4); 
+        }
+        .sidebar-header { 
+            padding: 24px; background: rgba(11, 15, 25, 0.6); border-bottom: 1px solid var(--border-color); 
+            text-align: center; display: flex; flex-direction: column; gap: 10px; 
+        }
+        .sidebar-header .title { font-weight: 700; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; }
+        .study-timer { 
+            font-size: 22px; color: #fff; font-weight: 800; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); 
+            padding: 8px 20px; border-radius: 30px; display: inline-block; align-self: center;
+            box-shadow: 0 0 20px rgba(2, 132, 199, 0.4), inset 0 2px 4px rgba(255,255,255,0.2);
+            font-variant-numeric: tabular-nums;
+        }
         
-        #users-container { flex: 1; overflow-y: auto; }
-        .user-item { padding: 15px 20px; border-bottom: 1px solid #f9f9f9; cursor: pointer; display: flex; align-items: center; gap: 10px; position: relative; transition: background 0.2s; }
-        .user-item:hover { background: #f0f7ff; }
+        #users-container { flex: 1; overflow-y: auto; padding: 15px 0; }
+        .user-item { 
+            padding: 14px 24px; cursor: pointer; display: flex; align-items: center; 
+            gap: 14px; transition: 0.2s; border-left: 4px solid transparent; margin-bottom: 2px;
+        }
+        .user-item:hover { background: rgba(56, 189, 248, 0.08); border-left-color: var(--accent); }
         
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: #ccc; transition: 0.3s; }
-        .status-dot.online { background-color: #28a745; box-shadow: 0 0 5px #28a745; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: #4b5563; transition: 0.3s; }
+        .status-dot.online { 
+            background-color: var(--success); 
+            box-shadow: 0 0 10px var(--success), 0 0 20px var(--success); 
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; }
+        }
         
-        .chat-window { flex: 1; display: flex; flex-direction: column; position: relative; }
-        .chat-header { padding: 15px 25px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; }
-        .messages-box { flex: 1; padding: 20px; overflow-y: auto; background: #f4f7f6; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
-        .msg { max-width: 65%; padding: 10px 15px; border-radius: 18px; font-size: 14px; position: relative; word-wrap: break-word; line-height: 1.4; }
-        .sent { align-self: flex-end; background: #007bff; color: white; border-bottom-right-radius: 4px; }
-        .received { align-self: flex-start; background: white; color: #333; border-bottom-left-radius: 4px; border: 1px solid #ddd; }
-        .input-area { padding: 20px; display: flex; gap: 10px; border-top: 1px solid #eee; background: #fff; }
-        .input-area input { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; outline: none; }
-        .input-area input:focus { border-color: #007bff; }
-        .input-area button { background: #007bff; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: 0.2s; }
-        .input-area button:hover { background: #0056b3; }
-        #logout-btn { margin: 10px; background: #ff4d4d; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        #logout-btn:hover { background: #cc0000; }
+        /* БЛОК ДОСТИЖЕНИЙ */
+        .achievements-box { padding: 20px; border-top: 1px solid var(--border-color); background: rgba(11, 15, 25, 0.4); }
+        .achievements-title { font-size: 11px; color: var(--text-muted); font-weight: 800; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px; }
+        .achievements-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .badge { 
+            background: #1f2937; padding: 10px; border-radius: 12px; text-align: center; 
+            font-size: 20px; filter: grayscale(100%); opacity: 0.3; transition: all 0.4s ease; 
+            position: relative; border: 1px solid transparent; cursor: pointer;
+        }
+        .badge.unlocked { 
+            filter: grayscale(0%); opacity: 1; background: #2d2213; 
+            border-color: var(--gold); box-shadow: 0 0 12px rgba(245, 158, 11, 0.25); 
+        }
+        .badge:hover::after {
+            content: attr(data-hint); position: absolute; bottom: 135%; left: 50%; transform: translateX(-50%);
+            background: #000; color: #fff; padding: 6px 10px; font-size: 11px; border-radius: 6px; white-space: nowrap; z-index: 10;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); border: 1px solid var(--border-color);
+        }
+
+        /* ОКНО СЕРЕДИНЫ (ЧАТ) */
+        .chat-window { flex: 1; display: flex; flex-direction: column; background: rgba(15, 23, 42, 0.3); }
+        .chat-header { padding: 24px; border-bottom: 1px solid var(--border-color); background: rgba(17, 24, 39, 0.8); font-weight: 700; font-size: 18px; letter-spacing: -0.3px; }
+        .messages-box { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .msg { max-width: 60%; padding: 12px 18px; border-radius: 16px; font-size: 14.5px; word-wrap: break-word; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .sent { align-self: flex-end; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; border-bottom-right-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
+        .received { align-self: flex-start; background: var(--panel-light); color: #f3f4f6; border-bottom-left-radius: 4px; border: 1px solid var(--border-color); }
+        
+        .input-area { padding: 20px; display: flex; gap: 14px; border-top: 1px solid var(--border-color); background: rgba(17, 24, 39, 0.8); }
+        .input-area input { 
+            flex: 1; padding: 14px 20px; background: #0b0f19; border: 1px solid var(--border-color); 
+            border-radius: 30px; outline: none; color: white; font-size: 14px; transition: 0.3s;
+        }
+        .input-area input:focus { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+        .input-area button { 
+            background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); color: white; border: none; width: 46px; height: 46px; 
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: 0.2s; 
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+        }
+        .input-area button:hover { transform: scale(1.08); }
+
+        /* ТАБЛИЦА ЛИДЕРОВ (СПРАВА) */
+        .leaderboard-panel { width: 260px; border-left: 1px solid var(--border-color); background: rgba(17, 24, 39, 0.4); display: flex; flex-direction: column; }
+        .leaderboard-header { padding: 24px; background: rgba(11, 15, 25, 0.6); border-bottom: 1px solid var(--border-color); font-weight: 800; text-transform: uppercase; font-size: 12px; color: var(--text-muted); letter-spacing: 1.5px; text-align: center;}
+        .leader-list { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .leader-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(31, 41, 55, 0.5); border-radius: 12px; border: 1px solid rgba(255,255,255,0.03); font-size: 13.5px; transition: 0.3s; }
+        .leader-item:hover { background: rgba(31, 41, 55, 0.8); transform: translateY(-1px); }
+        .leader-rank { font-weight: 900; width: 24px; color: var(--accent); font-size: 14px; }
+        .leader-name { flex: 1; margin-left: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #f3f4f6; font-weight: 500; }
+        .leader-time { font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
+
+        #logout-btn { margin: 15px; background: #dc2626; color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        #logout-btn:hover { background: #b91c1c; }
+
+        /* Кастомный красивый скроллбар */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
     </style>
 </head>
 <body>
 
+    <div id="toast-container"></div>
+
     <div id="login-block">
-        <h2>Welcome</h2>
-        <input type="email" id="email" placeholder="Email">
+        <h2>Cloud Chat Pro</h2>
+        <input type="email" id="email" placeholder="Электронная почта">
         <input type="password" id="password" placeholder="Пароль">
-        <button id="auth-btn">Войти / Регистрация</button>
+        <button id="auth-btn">Войти / Создать аккаунт</button>
         <button id="google-btn">
             <img src="https://www.google.com/favicon.ico" alt="Google">
             Войти через Google
@@ -58,24 +194,40 @@
     <div id="chat-block" class="main-container hidden">
         <div class="sidebar">
             <div class="sidebar-header">
-                Чаты
-                <div class="study-timer" id="study-timer-display">В учебе: 00:00:00</div>
+                <div class="title">Время в учёбе</div>
+                <div class="study-timer" id="study-timer-display">00:00:00</div>
             </div>
             <div id="users-container"></div>
+            
+            <div class="achievements-box">
+                <div class="achievements-title">Достижения</div>
+                <div class="achievements-list">
+                    <div class="badge" id="badge-1" data-hint="Новичок: Проучись 1 минуту">🌱</div>
+                    <div class="badge" id="badge-2" data-hint="Студент: Проучись 10 минут">📚</div>
+                    <div class="badge" id="badge-3" data-hint="Профи: Проучись 1 час">⚡</div>
+                    <div class="badge" id="badge-4" data-hint="Ботаник: Проучись 5 часов">👑</div>
+                </div>
+            </div>
             <button id="logout-btn">Выйти</button>
         </div>
+
         <div class="chat-window hidden" id="chat-window">
             <div class="chat-header">
-                <span id="chat-with-title" style="font-weight: bold;"></span>
+                <span id="chat-with-title"></span>
             </div>
             <div class="messages-box" id="messages-box"></div>
             <div class="input-area">
-                <input type="text" id="msg-input" placeholder="Введите сообщение...">
+                <input type="text" id="msg-input" placeholder="Напишите сообщение...">
                 <button id="send-btn">➤</button>
             </div>
         </div>
-        <div id="empty-chat-msg" style="flex:1; display:flex; align-items:center; justify-content:center; color:#999; font-size: 18px;">
-            Выберите чат для начала общения
+        <div id="empty-chat-msg" style="flex:1; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size: 15px; background: rgba(15, 23, 42, 0.2);">
+            Выберите чат из списка слева, чтобы начать общение
+        </div>
+
+        <div class="leaderboard-panel">
+            <div class="leaderboard-header">Лидеры Учебы 🏆</div>
+            <div class="leader-list" id="leader-list"></div>
         </div>
     </div>
 
@@ -88,68 +240,70 @@
 
         let currentUser = null;
         let recipientId = null;
-        
         let onlineUsers = new Set();
         let presenceChannel = null;
         
         let studySeconds = 0;
         let timerInterval = null;
         let saveInterval = null;
+        let leaderboardInterval = null;
         let timerStartedAt = null;
         let baseSeconds = 0;
+
+        // --- УВЕДОМЛЕНИЯ ---
+        function showToast(text) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `🎉 <span>${text}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 4000);
+        }
 
         // --- АВТОРИЗАЦИЯ ---
         document.getElementById('google-btn').onclick = async () => {
             const currentUrl = window.location.origin + window.location.pathname; 
-            const { error } = await supabase.auth.signInWithOAuth({
+            await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: { redirectTo: currentUrl } 
             });
-            if (error) alert(error.message);
         };
 
         document.getElementById('auth-btn').onclick = async () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            if(!email || !password) return alert('Введите почту и пароль');
+            if(!email || !password) return alert('Заполните поля!');
 
-            let { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            
+            let { error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) {
-                const { data: signData, error: signError } = await supabase.auth.signUp({ email, password });
+                const { error: signError } = await supabase.auth.signUp({ email, password });
                 if (signError) alert(signError.message);
                 else alert('Регистрация успешна! Теперь вы можете войти.');
             }
         };
 
         async function handleLogin(user) {
-            // ЗАЩИТА: Если этот пользователь уже авторизован в текущей сессии скрипта, выходим
             if (currentUser && currentUser.id === user.id) return;
             currentUser = user;
             
-            // Проверяем локальное хранилище на самый свежий бэкап времени
             const localSavedTime = localStorage.getItem(`study_seconds_${currentUser.id}`);
-            
-            const { data: profileData } = await supabase
-                .from('profiles')
-                .select('study_time')
-                .eq('id', currentUser.id)
-                .maybeSingle(); // Безопасный метод (не выдает ошибку, если запись пустая)
+            const { data: profileData } = await supabase.from('profiles').select('study_time').eq('id', currentUser.id).maybeSingle();
                 
             const dbSeconds = profileData?.study_time || 0;
-            
-            // Выбираем наибольшее значение (из БД или локального кэша вкладки)
             studySeconds = localSavedTime ? Math.max(parseInt(localSavedTime), dbSeconds) : dbSeconds;
+            
             updateTimerDisplay();
+            checkAchievements(true); // Загружаем ачивки без вызова алертов
 
-            // Сохраняем/Обновляем профиль
-            const { error: profileError } = await supabase.from('profiles').upsert({ 
+            await supabase.from('profiles').upsert({ 
                 id: currentUser.id, 
                 username: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
                 email: currentUser.email 
             }, { onConflict: 'id' });
-
-            if (profileError) console.error("Ошибка сохранения профиля:", profileError.message);
             
             document.getElementById('login-block').classList.add('hidden');
             document.getElementById('chat-block').classList.remove('hidden');
@@ -157,29 +311,27 @@
             await loadUsers();
             initPresence(); 
             startStudyTimer(); 
+            loadLeaderboard();
+            
+            leaderboardInterval = setInterval(loadLeaderboard, 10000);
         }
 
-        // Полагаемся в основном на onAuthStateChange, так как он срабатывает и при старте сессии автоматичеки
         supabase.auth.onAuthStateChange(async (event, session) => {
             if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
                 handleLogin(session.user);
             } else if (event === 'SIGNED_OUT') {
                 stopStudyTimer();
-                if (currentUser) {
-                    localStorage.removeItem(`study_seconds_${currentUser.id}`);
-                }
+                clearInterval(leaderboardInterval);
                 currentUser = null;
                 document.getElementById('login-block').classList.remove('hidden');
                 document.getElementById('chat-block').classList.add('hidden');
-                document.getElementById('users-container').innerHTML = '';
-                
                 if (presenceChannel) supabase.removeChannel(presenceChannel);
             }
         });
 
         document.getElementById('logout-btn').onclick = () => supabase.auth.signOut();
 
-        // --- ЛОГИКА ОНЛАЙНА (PRESENCE) ---
+        // --- PRESENCE (ОНЛАЙН) ---
         function initPresence() {
             if (presenceChannel) supabase.removeChannel(presenceChannel);
             presenceChannel = supabase.channel('online-users');
@@ -189,9 +341,7 @@
                     const newState = presenceChannel.presenceState();
                     onlineUsers.clear();
                     for (const id in newState) {
-                        if (newState[id][0]) {
-                            onlineUsers.add(newState[id][0].user_id);
-                        }
+                        if (newState[id][0]) onlineUsers.add(newState[id][0].user_id);
                     }
                     updateUsersUI(); 
                 })
@@ -202,30 +352,26 @@
                 });
         }
 
-        // --- УСТОЙЧИВАЯ ЛОГИКА ТАЙМЕРА УЧЕБЫ ---
+        // --- ТАЙМЕР И АЧИВКИ ---
         function startStudyTimer() {
             clearInterval(timerInterval);
             clearInterval(saveInterval);
-
             timerStartedAt = Date.now();
             baseSeconds = studySeconds;
 
-            // Расчет времени через разницу Timestamp (не боится сворачивания вкладок)
             timerInterval = setInterval(() => {
                 const elapsedSinceStart = Math.floor((Date.now() - timerStartedAt) / 1000);
                 studySeconds = baseSeconds + elapsedSinceStart;
                 updateTimerDisplay();
-                
-                // Моментальное локальное сохранение (на случай обновления страницы F5)
+                checkAchievements(false); // Проверяем на новые открытия в реальном времени
                 localStorage.setItem(`study_seconds_${currentUser.id}`, studySeconds);
             }, 1000);
 
-            // Мягкое сохранение в БД каждые 30 секунд (чтобы не перегружать лимиты Supabase)
             saveInterval = setInterval(async () => {
                 if (currentUser) {
                     await supabase.from('profiles').update({ study_time: studySeconds }).eq('id', currentUser.id);
                 }
-            }, 30000); 
+            }, 15000); 
         }
 
         function stopStudyTimer() {
@@ -240,7 +386,58 @@
             const h = String(Math.floor(studySeconds / 3600)).padStart(2, '0');
             const m = String(Math.floor((studySeconds % 3600) / 60)).padStart(2, '0');
             const s = String(studySeconds % 60).padStart(2, '0');
-            document.getElementById('study-timer-display').innerText = `В учебе: ${h}:${m}:${s}`;
+            document.getElementById('study-timer-display').innerText = `${h}:${m}:${s}`;
+        }
+
+        function checkAchievements(silent = false) {
+            const targets = [
+                { id: 'badge-1', time: 60, title: '🌱 Шаг в учебу!' },
+                { id: 'badge-2', time: 600, title: '📚 Студент' },
+                { id: 'badge-3', time: 3600, title: '⚡ Профи знаний' },
+                { id: 'badge-4', time: 18000, title: '👑 Легендарный Ботаник' }
+            ];
+
+            targets.forEach(t => {
+                const badgeEl = document.getElementById(t.id);
+                if (studySeconds >= t.time && !badgeEl.classList.contains('unlocked')) {
+                    badgeEl.classList.add('unlocked');
+                    if (!silent) {
+                        showToast(`Открыто достижение: ${t.title}`);
+                    }
+                }
+            });
+        }
+
+        // --- ТАБЛИЦА ЛИДЕРОВ ---
+        async function loadLeaderboard() {
+            const { data: topUsers } = await supabase
+                .from('profiles')
+                .select('username, study_time')
+                .order('study_time', { ascending: false })
+                .limit(5);
+
+            const container = document.getElementById('leader-list');
+            container.innerHTML = '';
+
+            if (topUsers) {
+                topUsers.forEach((user, index) => {
+                    const h = Math.floor(user.study_time / 3600);
+                    const m = Math.floor((user.study_time % 3600) / 60);
+                    
+                    const div = document.createElement('div');
+                    div.className = 'leader-item';
+                    
+                    let rank = index + 1;
+                    if(index === 0) rank = '👑';
+
+                    div.innerHTML = `
+                        <span class="leader-rank">${rank}</span>
+                        <span class="leader-name">${user.username}</span>
+                        <span class="leader-time">${h}ч ${m}м</span>
+                    `;
+                    container.appendChild(div);
+                });
+            }
         }
 
         // --- ЛОГИКА ЧАТА ---
@@ -248,11 +445,7 @@
 
         async function loadUsers() {
             const { data: users, error } = await supabase.from('profiles').select('*');
-            if (error) {
-                alert("Ошибка загрузки пользователей! Проверьте RLS политики в Supabase.");
-                return console.error("Ошибка загрузки пользователей:", error.message);
-            }
-            
+            if (error) return console.error(error.message);
             allUsersData = users || []; 
             updateUsersUI();
         }
@@ -281,7 +474,7 @@
             recipientId = id;
             document.getElementById('chat-window').classList.remove('hidden');
             document.getElementById('empty-chat-msg').classList.add('hidden');
-            document.getElementById('chat-with-title').innerText = name;
+            document.getElementById('chat-with-title').innerText = `@${name}`;
             
             await loadMessages();
 
@@ -302,19 +495,15 @@
         }
 
         async function loadMessages() {
-            const { data: msgs, error } = await supabase
+            const { data: msgs } = await supabase
                 .from('messages')
                 .select('*')
                 .or(`and(sender_id.eq.${currentUser.id},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${currentUser.id})`)
                 .order('created_at', { ascending: true });
 
-            if (error) console.error("Ошибка загрузки сообщений:", error.message);
-
             const box = document.getElementById('messages-box');
             box.innerHTML = '';
-            if (msgs) {
-                msgs.forEach(renderMessage);
-            }
+            if (msgs) msgs.forEach(renderMessage);
             box.scrollTop = box.scrollHeight;
         }
 
@@ -333,20 +522,12 @@
             if (!text || !recipientId) return;
 
             input.value = '';
-
-            const { error } = await supabase.from('messages').insert({
-                text: text,
-                sender_id: currentUser.id,
-                recipient_id: recipientId
-            });
-
-            if (error) console.error("Ошибка отправки:", error.message);
+            await supabase.from('messages').insert({ text, sender_id: currentUser.id, recipient_id: recipientId });
         };
 
         document.getElementById('send-btn').onclick = sendMsg;
         document.getElementById('msg-input').onkeydown = (e) => { if (e.key === 'Enter') sendMsg(); };
 
-        // Финальный бэкап при закрытии вкладки
         window.addEventListener('beforeunload', () => {
             if (currentUser) {
                 supabase.from('profiles').update({ study_time: studySeconds }).eq('id', currentUser.id);
