@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -24,7 +24,6 @@
         .user-item { padding: 15px 20px; border-bottom: 1px solid #f9f9f9; cursor: pointer; display: flex; align-items: center; gap: 10px; position: relative; transition: background 0.2s; }
         .user-item:hover { background: #f0f7ff; }
         
-        /* НОВОЕ: Индикатор онлайна */
         .status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: #ccc; transition: 0.3s; }
         .status-dot.online { background-color: #28a745; box-shadow: 0 0 5px #28a745; }
         
@@ -90,13 +89,14 @@
         let currentUser = null;
         let recipientId = null;
         
-        // НОВОЕ: Переменные для онлайна и таймера
         let onlineUsers = new Set();
         let presenceChannel = null;
         
         let studySeconds = 0;
         let timerInterval = null;
         let saveInterval = null;
+        let timerStartedAt = null;
+        let baseSeconds = 0;
 
         // --- АВТОРИЗАЦИЯ ---
         document.getElementById('google-btn').onclick = async () => {
@@ -123,19 +123,26 @@
         };
 
         async function handleLogin(user) {
+            // ЗАЩИТА: Если этот пользователь уже авторизован в текущей сессии скрипта, выходим
+            if (currentUser && currentUser.id === user.id) return;
             currentUser = user;
             
-            // НОВОЕ: Достаем текущее время учебы из базы (если оно там уже есть)
+            // Проверяем локальное хранилище на самый свежий бэкап времени
+            const localSavedTime = localStorage.getItem(`study_seconds_${currentUser.id}`);
+            
             const { data: profileData } = await supabase
                 .from('profiles')
                 .select('study_time')
                 .eq('id', currentUser.id)
-                .single();
+                .maybeSingle(); // Безопасный метод (не выдает ошибку, если запись пустая)
                 
-            studySeconds = profileData?.study_time || 0;
+            const dbSeconds = profileData?.study_time || 0;
+            
+            // Выбираем наибольшее значение (из БД или локального кэша вкладки)
+            studySeconds = localSavedTime ? Math.max(parseInt(localSavedTime), dbSeconds) : dbSeconds;
             updateTimerDisplay();
 
-            // Сохраняем/Обновляем профиль (ВНИМАНИЕ: добавили onConflict, чтобы не затирать время)
+            // Сохраняем/Обновляем профиль
             const { error: profileError } = await supabase.from('profiles').upsert({ 
                 id: currentUser.id, 
                 username: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
@@ -148,74 +155,82 @@
             document.getElementById('chat-block').classList.remove('hidden');
             
             await loadUsers();
-            initPresence(); // НОВОЕ: Запускаем слежку за онлайном
-            startStudyTimer(); // НОВОЕ: Запускаем таймер
+            initPresence(); 
+            startStudyTimer(); 
         }
 
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            handleLogin(session.user);
-        }
-
+        // Полагаемся в основном на onAuthStateChange, так как он срабатывает и при старте сессии автоматичеки
         supabase.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' && session) {
+            if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
                 handleLogin(session.user);
             } else if (event === 'SIGNED_OUT') {
+                stopStudyTimer();
+                if (currentUser) {
+                    localStorage.removeItem(`study_seconds_${currentUser.id}`);
+                }
                 currentUser = null;
                 document.getElementById('login-block').classList.remove('hidden');
                 document.getElementById('chat-block').classList.add('hidden');
                 document.getElementById('users-container').innerHTML = '';
                 
-                // НОВОЕ: Чистим всё при выходе
                 if (presenceChannel) supabase.removeChannel(presenceChannel);
-                stopStudyTimer();
             }
         });
 
-        // Выход
         document.getElementById('logout-btn').onclick = () => supabase.auth.signOut();
 
-        // --- НОВОЕ: ЛОГИКА ОНЛАЙНА (PRESENCE) ---
+        // --- ЛОГИКА ОНЛАЙНА (PRESENCE) ---
         function initPresence() {
+            if (presenceChannel) supabase.removeChannel(presenceChannel);
             presenceChannel = supabase.channel('online-users');
 
             presenceChannel
                 .on('presence', { event: 'sync' }, () => {
                     const newState = presenceChannel.presenceState();
                     onlineUsers.clear();
-                    
-                    // Собираем ID всех, кто сейчас онлайн
                     for (const id in newState) {
-                        onlineUsers.add(newState[id][0].user_id);
+                        if (newState[id][0]) {
+                            onlineUsers.add(newState[id][0].user_id);
+                        }
                     }
-                    updateUsersUI(); // Обновляем зеленые точки
+                    updateUsersUI(); 
                 })
                 .subscribe(async (status) => {
-                    if (status === 'SUBSCRIBED') {
-                        // Сообщаем всем, что мы онлайн
+                    if (status === 'SUBSCRIBED' && currentUser) {
                         await presenceChannel.track({ user_id: currentUser.id });
                     }
                 });
         }
 
-        // --- НОВОЕ: ЛОГИКА ТАЙМЕРА УЧЕБЫ ---
+        // --- УСТОЙЧИВАЯ ЛОГИКА ТАЙМЕРА УЧЕБЫ ---
         function startStudyTimer() {
-            // Тикает на экране каждую секунду
+            clearInterval(timerInterval);
+            clearInterval(saveInterval);
+
+            timerStartedAt = Date.now();
+            baseSeconds = studySeconds;
+
+            // Расчет времени через разницу Timestamp (не боится сворачивания вкладок)
             timerInterval = setInterval(() => {
-                studySeconds++;
+                const elapsedSinceStart = Math.floor((Date.now() - timerStartedAt) / 1000);
+                studySeconds = baseSeconds + elapsedSinceStart;
                 updateTimerDisplay();
+                
+                // Моментальное локальное сохранение (на случай обновления страницы F5)
+                localStorage.setItem(`study_seconds_${currentUser.id}`, studySeconds);
             }, 1000);
 
-            // Сохраняет в БД каждую минуту (чтобы не убить лимиты Supabase)
+            // Мягкое сохранение в БД каждые 30 секунд (чтобы не перегружать лимиты Supabase)
             saveInterval = setInterval(async () => {
-                await supabase.from('profiles').update({ study_time: studySeconds }).eq('id', currentUser.id);
-            }, 60000); 
+                if (currentUser) {
+                    await supabase.from('profiles').update({ study_time: studySeconds }).eq('id', currentUser.id);
+                }
+            }, 30000); 
         }
 
         function stopStudyTimer() {
             clearInterval(timerInterval);
             clearInterval(saveInterval);
-            // Сохраняем остатки перед выходом
             if (currentUser) {
                 supabase.from('profiles').update({ study_time: studySeconds }).eq('id', currentUser.id);
             }
@@ -233,24 +248,25 @@
 
         async function loadUsers() {
             const { data: users, error } = await supabase.from('profiles').select('*');
-            if (error) return console.error("Ошибка загрузки пользователей:", error.message);
+            if (error) {
+                alert("Ошибка загрузки пользователей! Проверьте RLS политики в Supabase.");
+                return console.error("Ошибка загрузки пользователей:", error.message);
+            }
             
-            allUsersData = users; // Сохраняем глобально для перерисовки
+            allUsersData = users || []; 
             updateUsersUI();
         }
 
-        // НОВОЕ: Вынес отрисовку списка в отдельную функцию
         function updateUsersUI() {
             const container = document.getElementById('users-container');
             container.innerHTML = '';
             
             allUsersData.forEach(user => {
-                if (user.id !== currentUser.id) {
+                if (currentUser && user.id !== currentUser.id) {
                     const isOnline = onlineUsers.has(user.id);
                     const div = document.createElement('div');
                     div.className = 'user-item';
                     
-                    // Добавили индикатор онлайна
                     div.innerHTML = `
                         <div class="status-dot ${isOnline ? 'online' : ''}"></div>
                         <span>${user.username || user.email}</span>
@@ -269,7 +285,6 @@
             
             await loadMessages();
 
-            // Чтобы не удалялся канал онлайна, отписываемся только от сообщений конкретной комнаты
             const existingChannel = supabase.getChannels().find(c => c.topic === 'realtime:room-messages');
             if (existingChannel) supabase.removeChannel(existingChannel);
 
@@ -331,15 +346,12 @@
         document.getElementById('send-btn').onclick = sendMsg;
         document.getElementById('msg-input').onkeydown = (e) => { if (e.key === 'Enter') sendMsg(); };
 
-        // Сохраняем время при закрытии вкладки
+        // Финальный бэкап при закрытии вкладки
         window.addEventListener('beforeunload', () => {
             if (currentUser) {
-                stopStudyTimer(); 
-                // navigator.sendBeacon можно юзать для гарантированной отправки, 
-                // но обычного update при таймере раз в минуту обычно хватает с головой.
+                supabase.from('profiles').update({ study_time: studySeconds }).eq('id', currentUser.id);
             }
         });
-
     </script>
 </body>
 </html>
