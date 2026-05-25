@@ -45,7 +45,7 @@
             display: flex; align-items: center; gap: 10px; border: 1px solid var(--accent);
         }
         .toast.show { transform: translateX(0); }
-        .toast.achievement { background: linear-gradient(135deg, var(--gold) 0%, #b45309 100%); border-color: rgba(255,255,255,0.3); }
+        .toast.achievement { background: linear-gradient(135deg, var(--gold) 0%, #b45309 100%); border-color: rgba(255,255,255,0.2); }
 
         /* ЭКРАН АВТОРИЗАЦИИ */
         #login-block { 
@@ -258,6 +258,7 @@
         let recipientId = null;
         let onlineUsers = new Set();
         let presenceChannel = null;
+        let broadcastChannel = null; // Канал для пингов без БД
         
         let studySeconds = 0;
         let timerInterval = null;
@@ -271,7 +272,7 @@
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = `toast ${isAchievement ? 'achievement' : ''}`;
-            toast.innerHTML = `${isAchievement ? '🎉' : '🔔'} <span>${text}</span>`;
+            toast.innerHTML = `${isAchievement ? '🎉' : '👋'} <span>${text}</span>`;
             container.appendChild(toast);
             setTimeout(() => toast.classList.add('show'), 50);
             setTimeout(() => {
@@ -319,7 +320,7 @@
             await supabase.from('profiles').upsert({ 
                 id: currentUser.id, 
                 username: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
-                email: currentUser.email 
+                email: currentUser.email
             }, { onConflict: 'id' });
             
             document.getElementById('login-block').classList.add('hidden');
@@ -327,9 +328,9 @@
             
             await loadUsers();
             initPresence(); 
+            initBroadcast(); // Запускаем независимый канал уведомлений
             startStudyTimer(); 
             loadLeaderboard();
-            initGlobalMessageListener(); // Слушаем пинги от других ребят
             
             leaderboardInterval = setInterval(loadLeaderboard, 10000);
         }
@@ -344,19 +345,54 @@
                 document.getElementById('login-block').classList.remove('hidden');
                 document.getElementById('chat-block').classList.add('hidden');
                 if (presenceChannel) supabase.removeChannel(presenceChannel);
+                if (broadcastChannel) supabase.removeChannel(broadcastChannel);
             }
         });
 
         document.getElementById('logout-btn').onclick = () => supabase.auth.signOut();
 
-        // --- ИЗМЕНЕНИЕ СЛОВА СТАТУСА ---
+        // --- ИЗМЕНЕНИЕ СТАТУСА ---
         document.getElementById('my-status-input').onchange = async (e) => {
             const text = e.target.value.trim();
             if (currentUser) {
                 await supabase.from('profiles').update({ status_text: text }).eq('id', currentUser.id);
-                loadUsers(); // Перерисовать у себя локально
+                loadUsers(); 
             }
         };
+
+        // --- БЕЗБАЗОВЫЙ КАНАЛ ВЕЩАНИЯ (BROADCAST) ---
+        function initBroadcast() {
+            if (broadcastChannel) supabase.removeChannel(broadcastChannel);
+            
+            broadcastChannel = supabase.channel('study-pings');
+
+            broadcastChannel
+                .on('broadcast', { event: 'ping-user' }, (payload) => {
+                    // Если пинг направлен именно мне
+                    if (payload.payload.targetId === currentUser.id) {
+                        showToast(`@${payload.payload.senderName} зовет вас учиться! 📚`);
+                    }
+                })
+                .subscribe();
+        }
+
+        async function sendPingNotification(targetId, targetName) {
+            const myName = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
+            
+            // Отправляем сигнал напрямую в браузеры без сохранения в БД
+            broadcastChannel.send({
+                type: 'broadcast',
+                event: 'ping-user',
+                payload: { 
+                    targetId: targetId, 
+                    senderId: currentUser.id, 
+                    senderName: myName 
+                }
+            });
+
+            showToast(`Вы позвали @${targetName} учиться!`);
+            openChat(targetId, targetName);
+        }
 
         // --- ОНЛАЙН СТАТУСЫ ---
         function initPresence() {
@@ -473,13 +509,11 @@
                                 <span class="user-status-text">${user.status_text || 'Нет статуса'}</span>
                             </div>
                         </div>
-                        ${isOnline ? `<button class="ping-btn" data-id="${user.id}" data-name="${user.username || user.email}">Позвать 👋</button>` : ''}
+                        ${isOnline ? `<button class="ping-btn">Позвать 👋</button>` : ''}
                     `;
                     
-                    // Клик по блоку информации открывает чат
                     div.querySelector('.user-info-block').onclick = () => openChat(user.id, user.username || user.email);
                     
-                    // Клик по кнопке "Позвать" посылает пинг
                     if (isOnline) {
                         div.querySelector('.ping-btn').onclick = (e) => {
                             e.stopPropagation();
@@ -489,33 +523,6 @@
                     container.appendChild(div);
                 }
             });
-        }
-
-        // --- ФУНКЦИЯ ПИНГА ---
-        async function sendPingNotification(targetId, targetName) {
-            const pingMessage = "👋 Привет! Давай поучимся вместе?";
-            await supabase.from('messages').insert({ 
-                text: pingMessage, 
-                sender_id: currentUser.id, 
-                recipient_id: targetId 
-            });
-            showToast(`Вы позвали @${targetName} учиться!`);
-            openChat(targetId, targetName);
-        }
-
-        // Глобальный слушатель для вызова всплывающих окон при получении пинга
-        function initGlobalMessageListener() {
-            supabase
-                .channel('global-pings')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                    if (payload.new.recipient_id === currentUser.id && payload.new.text.includes("Давай поучимся вместе?")) {
-                        // Ищем имя отправителя по его ID
-                        const sender = allUsersData.find(u => u.id === payload.new.sender_id);
-                        const senderName = sender ? sender.username : "Кто-то";
-                        showToast(`@${senderName} зовет вас учиться! 📚`);
-                    }
-                })
-                .subscribe();
         }
 
         // --- ДИАЛОГИ И МГНОВЕННЫЕ СООБЩЕНИЯ ---
